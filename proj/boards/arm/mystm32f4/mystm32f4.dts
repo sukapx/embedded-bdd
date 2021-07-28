@@ -43,10 +43,19 @@
 
 	gpio_keys {
 		compatible = "gpio-keys";
-		user_button: button {
-			label = "Key";
+		logic_in_0: logic_in_0 {
+			label = "logic_in_0";
 			gpios = <&gpioa 0 GPIO_ACTIVE_HIGH>;
 		};
+		logic_in_1: logic_in_1 {
+			label = "logic_in_1";
+			gpios = <&gpioa 1 GPIO_SINGLE_ENDED>;
+		};
+	};
+
+	aliases {
+		intermdule = &usart1;
+		sw0 = &logic_in_0;
 	};
 };
 

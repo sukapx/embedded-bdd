@@ -23,13 +23,30 @@
 		zephyr,flash = &flash0;
 	};
 
-	leds {
+	outputs {
 		compatible = "gpio-leds";
-		led_0: led0 {
-			gpios = <&gpio0 4 GPIO_ACTIVE_HIGH>;
+		led_0: led_0 {
+			gpios = <&gpio1 0 GPIO_PUSH_PULL>;
 		};
-		led_1: led1 {
-			gpios = <&gpio0 2 GPIO_ACTIVE_HIGH>;
+		led_1: led_1 {
+			gpios = <&gpio1 1 GPIO_PUSH_PULL>;
+		};
+		led_2: led_2 {
+			gpios = <&gpio0 25 GPIO_PUSH_PULL>;
+		};
+		led_3: led_3 {
+			gpios = <&gpio0 26 GPIO_PUSH_PULL>;
+		};
+	};
+	inputs {
+		compatible = "gpio-keys";
+		logic_in_0: logic_in0 {
+			label = "logic_in_0";
+			gpios = <&gpio1 2 GPIO_SINGLE_ENDED>;
+		};
+		logic_in_1: logic_in1 {
+			label = "logic_in_2";
+			gpios = <&gpio1 3 GPIO_SINGLE_ENDED>;
 		};
 	};
 };
@@ -47,28 +64,29 @@
 	current-speed = <115200>;
 	tx-pin = <1>;
 	rx-pin = <3>;
-	rts-pin = <22>;
-	cts-pin = <19>;
+//	rts-pin = <22>;
+//	cts-pin = <19>;
 };
 
-&uart1 {
-	current-speed = <115200>;
-	tx-pin = <10>;
-	rx-pin = <9>;
-	rts-pin = <11>;
-	cts-pin = <6>;
-	hw-flow-control;
-};
+//&uart1 {
+//	current-speed = <115200>;
+//	tx-pin = <10>;
+//	rx-pin = <9>;
+//	rts-pin = <11>;
+//	cts-pin = <6>;
+//	hw-flow-control;
+//};
 
-&uart2 {
-	current-speed = <115200>;
-	tx-pin = <17>;
-	rx-pin = <16>;
-	rts-pin = <7>;
-	cts-pin = <8>;
-	hw-flow-control;
-};
+//&uart2 {
+//	current-speed = <115200>;
+//	tx-pin = <17>;
+//	rx-pin = <16>;
+//	rts-pin = <7>;
+//	cts-pin = <8>;
+//	hw-flow-control;
+//};
 
+/*
 &i2c0 {
 	status = "okay";
 	clock-frequency = <I2C_BITRATE_FAST>;
@@ -81,7 +99,6 @@
 	sda-pin = <18>;
 	scl-pin = <5>;
 };
-
 &spi2 {
 	#address-cells = <1>;
 	#size-cells = <0>;
@@ -101,7 +118,7 @@
 	sclk-pin = <18>;
 	csel-pin = <5>;
 };
-
+*/
 &timer0 {
 	status = "okay";
 };
