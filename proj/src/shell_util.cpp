@@ -1,4 +1,4 @@
-
+#include "main.h"
 #include <shell/shell.h>
 
 static int cmd_util_hexdump(const struct shell *shell, size_t argc, char **argv)
