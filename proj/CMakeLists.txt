@@ -8,5 +8,6 @@ set(BOARD myesp32)
 find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 project(proj)
 
-
-target_sources(app PRIVATE src/main.cpp)
+FILE(GLOB app_sources_c src/*.c)
+FILE(GLOB app_sources_cpp src/*.cpp)
+target_sources(app PRIVATE ${app_sources_c} ${app_sources_cpp})
