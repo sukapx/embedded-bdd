@@ -15,7 +15,7 @@
 #include <shell/shell.h>
 
 //LOG_MODULE_DECLARE(main);
-LOG_MODULE_REGISTER(main, LOG_LEVEL_WRN);
+LOG_MODULE_REGISTER(main, LOG_LEVEL_INF);
 
 #define LED0_NODE DT_NODELABEL(led_0)
 #define LED1_NODE DT_NODELABEL(led_1)
@@ -24,6 +24,7 @@ LOG_MODULE_REGISTER(main, LOG_LEVEL_WRN);
 #define IN0_NODE	DT_NODELABEL(logic_in_0)
 #define IN1_NODE	DT_NODELABEL(logic_in_1)
 #define UART_NODE DT_LABEL(DT_ALIAS(intermdule))
+#define ADC_NODE		DT_PHANDLE(DT_PATH(zephyr_user), io_channels)
 
 long blinkInterval = 100;
 volatile bool enableRegulation = false;
@@ -260,17 +261,63 @@ void dataParser(void)
 */
 
 
+#include <drivers/adc.h>
+#define ADC_NUM_CHANNELS	DT_PROP_LEN(DT_PATH(zephyr_user), io_channels)
+
+#if !DT_NODE_EXISTS(DT_PATH(zephyr_user)) || \
+	!DT_NODE_HAS_PROP(DT_PATH(zephyr_user), io_channels)
+#error "No suitable devicetree overlay specified"
+#endif
+static uint8_t channel_ids[ADC_NUM_CHANNELS] = {
+	DT_IO_CHANNELS_INPUT_BY_IDX(DT_PATH(zephyr_user), 0)
+};
+
+static int16_t sample_buffer[ADC_NUM_CHANNELS];
+
+struct adc_channel_cfg channel_cfg = {
+	.gain = ADC_GAIN_1,
+	.reference = ADC_REF_INTERNAL,
+	.acquisition_time = ADC_ACQ_TIME_DEFAULT,
+	.channel_id = 0,
+	.differential = 0
+};
+
+struct adc_sequence sequence = {
+	.channels    = 0,
+	.buffer      = sample_buffer,
+	.buffer_size = sizeof(sample_buffer),
+	.resolution  = 12,
+};
+
+
+
+#include <drivers/dac.h>
+
+
+#define ZEPHYR_USER_NODE DT_PATH(zephyr_user)
+#if (DT_NODE_HAS_PROP(ZEPHYR_USER_NODE, dac)  && \
+	DT_NODE_HAS_PROP(ZEPHYR_USER_NODE, dac_channel_id) && \
+	DT_NODE_HAS_PROP(ZEPHYR_USER_NODE, dac_resolution))
+#define DAC_NODE DT_PHANDLE(ZEPHYR_USER_NODE, dac)
+#define DAC_CHANNEL_ID DT_PROP(ZEPHYR_USER_NODE, dac_channel_id)
+#define DAC_RESOLUTION DT_PROP(ZEPHYR_USER_NODE, dac_resolution)
+#else
+#error "Unsupported board: see README and check /zephyr,user node"
+#define DAC_NODE DT_INVALID_NODE
+#define DAC_CHANNEL_ID 0
+#define DAC_RESOLUTION 0
+#endif
+
+static const struct dac_channel_cfg dac_ch_cfg = {
+	.channel_id  = DAC_CHANNEL_ID,
+	.resolution  = DAC_RESOLUTION
+};
 
 
 
 
 
-
-void main(void)
-{
-	bool led_is_on = true;
-	LOG_INF("[BOARD]: %s", CONFIG_BOARD);
-
+void init_io_logic() {
 	in0 = new Button(GPIO_DT_SPEC_GET(IN0_NODE, gpios));
 	in1 = new Button(GPIO_DT_SPEC_GET(IN1_NODE, gpios));
 
@@ -286,18 +333,74 @@ void main(void)
 	led1->Init();
 	led2->Init();
 	led3->Init();
+}
+
+const struct device *dev_adc = DEVICE_DT_GET(ADC_NODE);
+void init_io_adc() {
+	if (!device_is_ready(dev_adc)) {
+		LOG_ERR("ADC device not found\n");
+		return;
+	}
+
+	for (uint8_t i = 0; i < ADC_NUM_CHANNELS; i++) {
+		channel_cfg.channel_id = channel_ids[i];
+
+		LOG_INF("ADC setup %d to %d\n", i, channel_cfg.channel_id);
+		adc_channel_setup(dev_adc, &channel_cfg);
+		sequence.channels |= BIT(channel_ids[i]);
+	}
+}
+
+static const struct device *dac_dev = DEVICE_DT_GET(DAC_NODE);
+void init_io_dac() {
+	if (!device_is_ready(dac_dev)) {
+		LOG_ERR("DAC device %s is not ready\n", dac_dev->name);
+		return;
+	}
+	int ret = dac_channel_setup(dac_dev, &dac_ch_cfg);
+	if (ret != 0) {
+		LOG_ERR("Setting up of DAC channel failed with code %d\n", ret);
+		return;
+	}
+}
+
+
+void main(void)
+{
+	int ret = 0;
+	LOG_INF("[BOARD]: %s", CONFIG_BOARD);
+
+	init_io_logic();
+	init_io_adc();
+	init_io_dac();
 
 	k_timer_start(&timer_blink, K_MSEC(500), K_MSEC(500));
 
+	int32_t adc_vref = adc_ref_internal(dev_adc);
 	LOG_INF("[main] Run");
 	for (size_t loopIter = 0;;loopIter++) {
-		LOG_DBG("[main] %d", loopIter);
-		for(size_t loops = 0; loops < 100; loops++)
-		{
-			//led0->SetState(led_is_on);
-			led_is_on = !led_is_on;
-			k_msleep(blinkInterval);
+		LOG_DBG("loopIter %d", loopIter);
+
+		uint32_t dac_value = (loopIter<<2)%(1U<<DAC_RESOLUTION);
+		ret = dac_write_value(dac_dev, 1, dac_value);
+		if (ret != 0) {
+			LOG_ERR("dac_write_value() failed with code %d\n", ret);
+			return;
 		}
+
+		ret = adc_read(dev_adc, &sequence);
+		if (ret != 0) {
+			LOG_ERR("ADC reading failed with error %d.\n", ret);
+			return;
+		}
+
+		if(loopIter%20 == 0) {
+			LOG_INF("DAC: %d", dac_value);
+			for(size_t adcIdx = 0; adcIdx < ADC_NUM_CHANNELS; adcIdx++){
+				LOG_INF("ADC%d: %d   Ref: %d", adcIdx, sample_buffer[adcIdx], adc_vref);
+			}
+		}
+		k_msleep(blinkInterval);
 	}
 }
 

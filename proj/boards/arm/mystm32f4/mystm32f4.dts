@@ -53,6 +53,13 @@
 		};
 	};
 
+	zephyr,user {
+		io-channels = <&adc1 5>;
+		dac = <&dac1>;
+		dac-channel-id = <1>;
+		dac-resolution = <12>;
+	};
+
 	aliases {
 		intermdule = &usart1;
 		sw0 = &logic_in_0;
@@ -110,7 +117,7 @@
 	pinctrl-0 = <&usb_otg_fs_dm_pa11 &usb_otg_fs_dp_pa12>;
 	status = "okay";
 };
-
+/*
 &can1 {
 	pinctrl-0 = <&can1_rx_pb8 &can1_tx_pb9>;
 	bus-speed = <125000>;
@@ -121,4 +128,14 @@
 	pinctrl-0 = <&can2_rx_pb5 &can2_tx_pb13>;
 	bus-speed = <125000>;
 	status = "okay";
+};
+*/
+&adc1 {
+	status = "okay";
+	pinctrl-0 = <&adc1_in5_pa5>;
+};
+
+&dac1 {
+	status = "okay";
+	pinctrl-0 = <&dac_out1_pa4>;
 };
