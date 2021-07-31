@@ -54,7 +54,7 @@
 	};
 
 	zephyr,user {
-		io-channels = <&adc1 5>;
+		io-channels = <&adc1 5>, <&adc1 7>;
 		dac = <&dac1>;
 		dac-channel-id = <1>;
 		dac-resolution = <12>;
@@ -132,7 +132,7 @@
 */
 &adc1 {
 	status = "okay";
-	pinctrl-0 = <&adc1_in5_pa5>;
+	pinctrl-0 = <&adc1_in5_pa5>, <&adc1_in7_pa7>;
 };
 
 &dac1 {

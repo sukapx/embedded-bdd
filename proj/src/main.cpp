@@ -269,10 +269,11 @@ void dataParser(void)
 #error "No suitable devicetree overlay specified"
 #endif
 static uint8_t channel_ids[ADC_NUM_CHANNELS] = {
-	DT_IO_CHANNELS_INPUT_BY_IDX(DT_PATH(zephyr_user), 0)
+	DT_IO_CHANNELS_INPUT_BY_IDX(DT_PATH(zephyr_user), 0),
+	DT_IO_CHANNELS_INPUT_BY_IDX(DT_PATH(zephyr_user), 1)
 };
 
-static int16_t sample_buffer[ADC_NUM_CHANNELS];
+static int16_t sample_buffer[1];
 
 struct adc_channel_cfg channel_cfg = {
 	.gain = ADC_GAIN_1,
@@ -347,7 +348,6 @@ void init_io_adc() {
 
 		LOG_INF("ADC setup %d to %d\n", i, channel_cfg.channel_id);
 		adc_channel_setup(dev_adc, &channel_cfg);
-		sequence.channels |= BIT(channel_ids[i]);
 	}
 }
 
@@ -388,16 +388,17 @@ void main(void)
 			return;
 		}
 
-		ret = adc_read(dev_adc, &sequence);
-		if (ret != 0) {
-			LOG_ERR("ADC reading failed with error %d.\n", ret);
-			return;
-		}
 
 		if(loopIter%20 == 0) {
 			LOG_INF("DAC: %d", dac_value);
 			for(size_t adcIdx = 0; adcIdx < ADC_NUM_CHANNELS; adcIdx++){
-				LOG_INF("ADC%d: %d   Ref: %d", adcIdx, sample_buffer[adcIdx], adc_vref);
+				sequence.channels = BIT(channel_ids[adcIdx]);
+				ret = adc_read(dev_adc, &sequence);
+				if (ret != 0) {
+					LOG_ERR("ADC reading failed with error %d.\n", ret);
+					return;
+				}
+				LOG_INF("ADC%d: %d   Ref: %d", adcIdx, sample_buffer[0], adc_vref);
 			}
 		}
 		k_msleep(blinkInterval);
