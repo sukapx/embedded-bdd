@@ -8,7 +8,7 @@
       "name": "(gdb) MySTM32",
       "type": "cppdbg",
       "request": "launch",
-      "program": "${workspaceFolder}/build_mystm32/zephyr/zephyr_prebuilt.elf",
+      "program": "${workspaceFolder}/build_mystm32/zephyr/zephyr.elf",
       "args": [],
       "stopAtEntry": false,
       "cwd": "${workspaceFolder}",
