@@ -224,36 +224,36 @@ public:
 	}
 
 	void init_io_logic() {
-		BOARD.in0 = new Button(GPIO_DT_SPEC_GET(IN0_NODE, gpios));
-		BOARD.in1 = new Button(GPIO_DT_SPEC_GET(IN1_NODE, gpios));
+		in0 = new Button(GPIO_DT_SPEC_GET(IN0_NODE, gpios));
+		in1 = new Button(GPIO_DT_SPEC_GET(IN1_NODE, gpios));
 
-		BOARD.led0 = new Button(GPIO_DT_SPEC_GET(LED0_NODE, gpios), GPIO_OUTPUT_INACTIVE);
-		BOARD.led1 = new Button(GPIO_DT_SPEC_GET(LED1_NODE, gpios), GPIO_OUTPUT_INACTIVE);
-		BOARD.led2 = new Button(GPIO_DT_SPEC_GET(LED2_NODE, gpios), GPIO_OUTPUT_INACTIVE);
-		BOARD.led3 = new Button(GPIO_DT_SPEC_GET(LED3_NODE, gpios), GPIO_OUTPUT_INACTIVE);
+		led0 = new Button(GPIO_DT_SPEC_GET(LED0_NODE, gpios), GPIO_OUTPUT_INACTIVE);
+		led1 = new Button(GPIO_DT_SPEC_GET(LED1_NODE, gpios), GPIO_OUTPUT_INACTIVE);
+		led2 = new Button(GPIO_DT_SPEC_GET(LED2_NODE, gpios), GPIO_OUTPUT_INACTIVE);
+		led3 = new Button(GPIO_DT_SPEC_GET(LED3_NODE, gpios), GPIO_OUTPUT_INACTIVE);
 
-		BOARD.in0->Init();
-		BOARD.in1->Init();
+		in0->Init();
+		in1->Init();
 
-		BOARD.led0->Init();
-		BOARD.led1->Init();
-		BOARD.led2->Init();
-		BOARD.led3->Init();
+		led0->Init();
+		led1->Init();
+		led2->Init();
+		led3->Init();
 	}
 
 	void init_io_adc() {
-		BOARD.aIn0 = new AnalogIn(DEVICE_DT_GET(ADC_NODE), DT_IO_CHANNELS_INPUT_BY_IDX(DT_PATH(zephyr_user), 0));
-		BOARD.aIn1 = new AnalogIn(DEVICE_DT_GET(ADC_NODE), DT_IO_CHANNELS_INPUT_BY_IDX(DT_PATH(zephyr_user), 1));
+		aIn0 = new AnalogIn(DEVICE_DT_GET(ADC_NODE), DT_IO_CHANNELS_INPUT_BY_IDX(DT_PATH(zephyr_user), 0));
+		aIn1 = new AnalogIn(DEVICE_DT_GET(ADC_NODE), DT_IO_CHANNELS_INPUT_BY_IDX(DT_PATH(zephyr_user), 1));
 
-		BOARD.aIn0->Init();
-		BOARD.aIn1->Init();
+		aIn0->Init();
+		aIn1->Init();
 	}
 
 	void init_io_dac() {
 		static const struct device *dac_dev = DEVICE_DT_GET(DAC_NODE);
-		BOARD.aOut0 = new AnalogOut(dac_dev, DT_PROP(ZEPHYR_USER_NODE, dac_channel_id), DT_PROP(ZEPHYR_USER_NODE, dac_resolution));
+		aOut0 = new AnalogOut(dac_dev, DT_PROP(ZEPHYR_USER_NODE, dac_channel_id), DT_PROP(ZEPHYR_USER_NODE, dac_resolution));
 
-		BOARD.aOut0->Init();
+		aOut0->Init();
 	}
 
 
