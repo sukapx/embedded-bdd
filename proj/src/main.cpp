@@ -27,9 +27,25 @@ LOG_MODULE_REGISTER(main, LOG_LEVEL_INF);
 #define ADC_NODE		DT_PHANDLE(DT_PATH(zephyr_user), io_channels)
 
 long blinkInterval = 100;
-volatile bool enableRegulation = false;
 
-class Button {
+struct DeviceState {
+	enum State {
+		TESTFRAMEWORK,
+		DEMO,
+		CONTROLLOOP
+	};
+};
+
+volatile DeviceState::State device_state = DeviceState::DEMO;
+
+class IOLogic {
+public:
+	virtual uint32_t Read() const;
+	virtual void Write(uint32_t state);
+};
+
+class Button : public IOLogic
+{
 	const struct gpio_dt_spec m_button;
 	const gpio_flags_t m_extra_flags;
 
@@ -54,12 +70,13 @@ public:
 		}
 	}
 
-	uint32_t GetState() {
+	virtual uint32_t Read() const
+	{
 		if (!device_is_ready(m_button.port)) return 0;
 		return gpio_pin_get_dt(&m_button);
 	}
 
-	void SetState(uint32_t state) {
+	virtual void Write(uint32_t state) {
 		if (device_is_ready(m_button.port))
 			gpio_pin_set(m_button.port, m_button.pin, state);
 	}
@@ -73,11 +90,129 @@ Button* led2;
 Button* led3;
 
 
+#include <drivers/adc.h>
+#define ADC_NUM_CHANNELS	DT_PROP_LEN(DT_PATH(zephyr_user), io_channels)
+
+#if !DT_NODE_EXISTS(DT_PATH(zephyr_user)) || \
+	!DT_NODE_HAS_PROP(DT_PATH(zephyr_user), io_channels)
+#error "No suitable devicetree overlay specified"
+#endif
+
+
+
+class AnalogIn
+{
+	const struct device* m_dev_adc;
+	const uint8_t m_channel_id;
+
+public:
+	AnalogIn(const struct device *dev_adc, const uint8_t channel_id) :
+		m_dev_adc(dev_adc),
+		m_channel_id(channel_id)
+	{
+	}
+
+	void Init() {
+		if (!device_is_ready(m_dev_adc)) {
+			LOG_ERR("ADC device not found\n");
+			return;
+		}
+		struct adc_channel_cfg channel_cfg = {
+			.gain = ADC_GAIN_1,
+			.reference = ADC_REF_INTERNAL,
+			.acquisition_time = ADC_ACQ_TIME_DEFAULT,
+			.channel_id = m_channel_id,
+			.differential = 0
+		};
+
+		LOG_INF("ADC setup channel %d\n", channel_cfg.channel_id);
+		adc_channel_setup(m_dev_adc, &channel_cfg);
+	}
+
+	float Read() {
+		int16_t sample_buffer[1];
+		struct adc_sequence sequence= {
+			.channels    = BIT(m_channel_id),
+			.buffer      = sample_buffer,
+			.buffer_size = sizeof(sample_buffer),
+			.resolution  = 12,
+		};
+		int ret = adc_read(m_dev_adc, &sequence);
+		return static_cast<float>(sample_buffer[0]) / (1U<<sequence.resolution);
+	}
+};
+
+AnalogIn* aIn0;
+AnalogIn* aIn1;
+
+void init_io_adc() {
+	aIn0 = new AnalogIn(DEVICE_DT_GET(ADC_NODE), DT_IO_CHANNELS_INPUT_BY_IDX(DT_PATH(zephyr_user), 0));
+	aIn1 = new AnalogIn(DEVICE_DT_GET(ADC_NODE), DT_IO_CHANNELS_INPUT_BY_IDX(DT_PATH(zephyr_user), 1));
+
+	aIn0->Init();
+	aIn1->Init();
+}
 
 
 
 
+#include <drivers/dac.h>
 
+
+#define ZEPHYR_USER_NODE DT_PATH(zephyr_user)
+#if (DT_NODE_HAS_PROP(ZEPHYR_USER_NODE, dac)  && \
+	DT_NODE_HAS_PROP(ZEPHYR_USER_NODE, dac_channel_id) && \
+	DT_NODE_HAS_PROP(ZEPHYR_USER_NODE, dac_resolution))
+#define DAC_NODE DT_PHANDLE(ZEPHYR_USER_NODE, dac)
+#else
+#error "Unsupported board: see README and check /zephyr,user node"
+#define DAC_NODE DT_INVALID_NODE
+#define DAC_CHANNEL_ID 0
+#define DAC_RESOLUTION 0
+#endif
+
+class AnalogOut
+{
+const struct device* m_dac_dev;
+const struct dac_channel_cfg m_dac_ch_cfg;
+
+public:
+	AnalogOut(const struct device* dev_dac, const uint8_t channel_id, const uint8_t resolution) :
+		m_dac_dev(dev_dac),
+		m_dac_ch_cfg({channel_id, resolution})
+	{
+	}
+
+	void Init() {
+		if (!device_is_ready(m_dac_dev)) {
+			LOG_ERR("DAC device %s is not ready\n", m_dac_dev->name);
+			return;
+		}
+		int ret = dac_channel_setup(m_dac_dev, &m_dac_ch_cfg);
+		if (ret != 0) {
+			LOG_ERR("Setting up of DAC channel failed with code %d\n", ret);
+			return;
+		}
+	}
+
+	void Write(float value) {
+		uint32_t raw = static_cast<uint32_t>(value * (1U<<m_dac_ch_cfg.resolution));
+		int ret = dac_write_value(m_dac_dev, m_dac_ch_cfg.channel_id, raw);
+		if (ret != 0) {
+			LOG_ERR("dac_write_value() failed with code %d\n", ret);
+			return;
+		}
+	}
+};
+
+AnalogOut* aOut0;
+
+void init_io_dac() {
+	static const struct device *dac_dev = DEVICE_DT_GET(DAC_NODE);
+	aOut0 = new AnalogOut(dac_dev, DT_PROP(ZEPHYR_USER_NODE, dac_channel_id), DT_PROP(ZEPHYR_USER_NODE, dac_resolution));
+
+	aOut0->Init();
+}
 
 
 
@@ -98,16 +233,27 @@ static int cmd_io_set(const struct shell *shell, size_t argc, char **argv)
 		output = led2;
 	}else if(strcmp("led3", argv[1]) == 0) {
 		output = led3;
-	}else{
-		shell_print(shell, "Unknown Output: '%s'", argv[1]);
 	}
 
 	if(output != NULL) {
 		auto value = atoi(argv[2]);
-		output->SetState(value);
+		output->Write(value);
+		return 0;
 	}
 
-	return 0;
+	AnalogOut* aOut = NULL;
+	if(strcmp("aOut0", argv[1]) == 0) {
+		aOut = aOut0;
+	}
+
+	if(aOut != NULL) {
+		auto value = atoi(argv[2]);
+		aOut0->Write(value * 0.001f);
+		return 0;
+	}
+
+	shell_print(shell, "Unknown Output: '%s'", argv[1]);
+	return -1;
 }
 
 static int cmd_io_get(const struct shell *shell, size_t argc, char **argv)
@@ -122,35 +268,53 @@ static int cmd_io_get(const struct shell *shell, size_t argc, char **argv)
 		input = in0;
 	}else if(strcmp("in1", argv[1]) == 0) {
 		input = in1;
-	}else{
-		shell_print(shell, "Unknown Input: '%s'", argv[1]);
 	}
 
 	if(input != NULL) {
-		shell_print(shell, "%d", input->GetState());
+		shell_print(shell, "%d", input->Read());
+		return 0;
 	}
 
-	return 0;
+
+	AnalogIn* aIn = NULL;
+	if(strcmp("aIn0", argv[1]) == 0) {
+		aIn = aIn0;
+	}else if(strcmp("aIn1", argv[1]) == 0) {
+		aIn = aIn1;
+	}
+
+	if(aIn != NULL) {
+		shell_print(shell, "%d", static_cast<int>(aIn->Read()*1000));
+		return 0;
+	}
+
+	shell_print(shell, "Unknown Input: '%s'", argv[1]);
+	return -1;
 }
 
-static int cmd_io_regulate(const struct shell *shell, size_t argc, char **argv)
+static int cmd_io_devicestate(const struct shell *shell, size_t argc, char **argv,
+		    void *data)
 {
 	if(argc < 1) {
-		shell_print(shell, "Usage: regulate 0|1");
+		shell_print(shell, "Usage: devicestate DEMO, CONTROLLOOP, TESTFRAMEWORK");
 		return -1;
 	}
 
-	enableRegulation = (argv[1][0] =='1');
-	shell_print(shell, "Regulation is %d", enableRegulation);
-	
+	device_state = (DeviceState::State)(intptr_t)data;
+	shell_print(shell, "Regulation is %d", device_state);
 
 	return 0;
 }
+SHELL_SUBCMD_DICT_SET_CREATE(sub_io_devicestate, cmd_io_devicestate,
+	(DEMO, DeviceState::DEMO),
+	(CONTROLLOOP, DeviceState::CONTROLLOOP),
+	(TESTFRAMEWORK, DeviceState::TESTFRAMEWORK)
+);
 
 SHELL_STATIC_SUBCMD_SET_CREATE(sub_io,
 	SHELL_CMD(set, NULL, "Set", cmd_io_set),
 	SHELL_CMD(get, NULL, "Get", cmd_io_get),
-	SHELL_CMD(regulate, NULL, "Regulation 1|0", cmd_io_regulate),
+	SHELL_CMD(devicestate, &sub_io_devicestate, "devicestate DEMO, CONTROLLOOP, TESTFRAMEWORK", cmd_io_devicestate),
 	SHELL_SUBCMD_SET_END /* Array terminated. */
 );
 SHELL_CMD_REGISTER(io, &sub_io, "IO commands", NULL);
@@ -158,19 +322,17 @@ SHELL_CMD_REGISTER(io, &sub_io, "IO commands", NULL);
 
 
 
-
-
-K_TIMER_DEFINE(timer_blink, NULL, NULL);
-void blink0(void)
+K_TIMER_DEFINE(timer_controlloop, NULL, NULL);
+void controlloop(void)
 {
-	LOG_INF("[blink0] Run");
+	LOG_INF("[controlloop] Run");
 	for (size_t loopIter = 0;;loopIter++) {
-		k_timer_status_sync(&timer_blink);
-		LOG_DBG("[blink0] %d", loopIter);
-		if(enableRegulation){
-			LOG_INF("[blink0] States: %d, %d", in0->GetState(), in1->GetState());
-			led2->SetState(in0->GetState());
-			led3->SetState(in1->GetState());
+		k_timer_status_sync(&timer_controlloop);
+		LOG_DBG("[controlloop] %d", loopIter);
+		if(device_state == DeviceState::CONTROLLOOP){
+			LOG_INF("[controlloop] States: %d, %d", in0->Read(), in1->Read());
+			led2->Write(in0->Read());
+			led3->Write(in1->Read());
 		}
 	}
 }
@@ -261,59 +423,6 @@ void dataParser(void)
 */
 
 
-#include <drivers/adc.h>
-#define ADC_NUM_CHANNELS	DT_PROP_LEN(DT_PATH(zephyr_user), io_channels)
-
-#if !DT_NODE_EXISTS(DT_PATH(zephyr_user)) || \
-	!DT_NODE_HAS_PROP(DT_PATH(zephyr_user), io_channels)
-#error "No suitable devicetree overlay specified"
-#endif
-static uint8_t channel_ids[ADC_NUM_CHANNELS] = {
-	DT_IO_CHANNELS_INPUT_BY_IDX(DT_PATH(zephyr_user), 0),
-	DT_IO_CHANNELS_INPUT_BY_IDX(DT_PATH(zephyr_user), 1)
-};
-
-static int16_t sample_buffer[1];
-
-struct adc_channel_cfg channel_cfg = {
-	.gain = ADC_GAIN_1,
-	.reference = ADC_REF_INTERNAL,
-	.acquisition_time = ADC_ACQ_TIME_DEFAULT,
-	.channel_id = 0,
-	.differential = 0
-};
-
-struct adc_sequence sequence = {
-	.channels    = 0,
-	.buffer      = sample_buffer,
-	.buffer_size = sizeof(sample_buffer),
-	.resolution  = 12,
-};
-
-
-
-#include <drivers/dac.h>
-
-
-#define ZEPHYR_USER_NODE DT_PATH(zephyr_user)
-#if (DT_NODE_HAS_PROP(ZEPHYR_USER_NODE, dac)  && \
-	DT_NODE_HAS_PROP(ZEPHYR_USER_NODE, dac_channel_id) && \
-	DT_NODE_HAS_PROP(ZEPHYR_USER_NODE, dac_resolution))
-#define DAC_NODE DT_PHANDLE(ZEPHYR_USER_NODE, dac)
-#define DAC_CHANNEL_ID DT_PROP(ZEPHYR_USER_NODE, dac_channel_id)
-#define DAC_RESOLUTION DT_PROP(ZEPHYR_USER_NODE, dac_resolution)
-#else
-#error "Unsupported board: see README and check /zephyr,user node"
-#define DAC_NODE DT_INVALID_NODE
-#define DAC_CHANNEL_ID 0
-#define DAC_RESOLUTION 0
-#endif
-
-static const struct dac_channel_cfg dac_ch_cfg = {
-	.channel_id  = DAC_CHANNEL_ID,
-	.resolution  = DAC_RESOLUTION
-};
-
 
 
 
@@ -336,71 +445,31 @@ void init_io_logic() {
 	led3->Init();
 }
 
-const struct device *dev_adc = DEVICE_DT_GET(ADC_NODE);
-void init_io_adc() {
-	if (!device_is_ready(dev_adc)) {
-		LOG_ERR("ADC device not found\n");
-		return;
-	}
-
-	for (uint8_t i = 0; i < ADC_NUM_CHANNELS; i++) {
-		channel_cfg.channel_id = channel_ids[i];
-
-		LOG_INF("ADC setup %d to %d\n", i, channel_cfg.channel_id);
-		adc_channel_setup(dev_adc, &channel_cfg);
-	}
-}
-
-static const struct device *dac_dev = DEVICE_DT_GET(DAC_NODE);
-void init_io_dac() {
-	if (!device_is_ready(dac_dev)) {
-		LOG_ERR("DAC device %s is not ready\n", dac_dev->name);
-		return;
-	}
-	int ret = dac_channel_setup(dac_dev, &dac_ch_cfg);
-	if (ret != 0) {
-		LOG_ERR("Setting up of DAC channel failed with code %d\n", ret);
-		return;
-	}
-}
-
 
 void main(void)
 {
-	int ret = 0;
 	LOG_INF("[BOARD]: %s", CONFIG_BOARD);
 
 	init_io_logic();
 	init_io_adc();
 	init_io_dac();
 
-	k_timer_start(&timer_blink, K_MSEC(500), K_MSEC(500));
+	k_timer_start(&timer_controlloop, K_MSEC(500), K_MSEC(500));
 
-	int32_t adc_vref = adc_ref_internal(dev_adc);
 	LOG_INF("[main] Run");
 	for (size_t loopIter = 0;;loopIter++) {
 		LOG_DBG("loopIter %d", loopIter);
+		if(device_state == DeviceState::DEMO){
+			float dac_value = (loopIter%1000)*0.001;
+			aOut0->Write(dac_value);
 
-		uint32_t dac_value = (loopIter<<2)%(1U<<DAC_RESOLUTION);
-		ret = dac_write_value(dac_dev, 1, dac_value);
-		if (ret != 0) {
-			LOG_ERR("dac_write_value() failed with code %d\n", ret);
-			return;
-		}
-
-
-		if(loopIter%20 == 0) {
-			LOG_INF("DAC: %d", dac_value);
-			for(size_t adcIdx = 0; adcIdx < ADC_NUM_CHANNELS; adcIdx++){
-				sequence.channels = BIT(channel_ids[adcIdx]);
-				ret = adc_read(dev_adc, &sequence);
-				if (ret != 0) {
-					LOG_ERR("ADC reading failed with error %d.\n", ret);
-					return;
-				}
-				LOG_INF("ADC%d: %d   Ref: %d", adcIdx, sample_buffer[0], adc_vref);
+			if((loopIter%20) == 0) {
+				LOG_INF("DAC: %d", static_cast<int>(dac_value*1000));
+				LOG_INF("ADC0: %d", static_cast<int>(aIn0->Read()*1000));
+				LOG_INF("ADC1: %d", static_cast<int>(aIn1->Read()*1000));
 			}
 		}
+		led0->Write(!led0->Read());
 		k_msleep(blinkInterval);
 	}
 }
@@ -408,7 +477,7 @@ void main(void)
 #define STACKSIZE 1024
 #define PRIORITY 7
 
-K_THREAD_DEFINE(blink0_id, STACKSIZE, blink0, NULL, NULL, NULL,
+K_THREAD_DEFINE(controlloop_id, STACKSIZE, controlloop, NULL, NULL, NULL,
 		PRIORITY, 0, 0);
 //K_THREAD_DEFINE(dataParser_id, STACKSIZE, dataParser, NULL, NULL, NULL,
 //		PRIORITY, 0, 0);
