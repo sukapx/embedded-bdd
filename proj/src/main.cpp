@@ -409,7 +409,7 @@ void controlloop(){
 		BOARD.led2->Write(false);
 	}
 
-	LOG_INF("[controlloop] Enabled: %d   Heating: %d  Temperature: %d", BOARD.in0->Read(), heating, static_cast<int>(BOARD.aIn1->Read()*1000));
+	printk("[controlloop] Enabled: %d   Heating: %d  Temperature: %d\n", BOARD.in0->Read(), heating, static_cast<int>(BOARD.aIn1->Read()*1000));
 }
 
 void hw_mock() {
@@ -422,7 +422,7 @@ void hw_mock() {
 			temperature -= 25;
 	}
 	BOARD.aOut0->Write(temperature*0.001F);
-	LOG_INF("[hw_mock] IsHeating: %d Temperature: %d", BOARD.in0->Read(), temperature);
+	printk("[hw_mock] IsHeating: %d Temperature: %d\n", BOARD.in0->Read(), temperature);
 }
 
 
@@ -451,7 +451,7 @@ void main(void)
 
 	BOARD.Init();
 
-	k_timer_start(&timer_controlloop, K_MSEC(500), K_MSEC(500));
+	k_timer_start(&timer_controlloop, K_MSEC(500), K_MSEC(100));
 
 	LOG_INF("[main] Run");
 	for (size_t loopIter = 0;;loopIter++) {
