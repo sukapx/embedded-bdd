@@ -390,15 +390,26 @@ SHELL_CMD_REGISTER(io, &sub_io, "IO commands", NULL);
 
 
 
+/**
+ * in0 enables heater
+ * aIn1 is seen as Temperature
+ */
 void controlloop(){
 	static bool heating = false;
-	if(BOARD.aIn1->Read() > 0.7F && heating) {
-		heating = false;
-	}else if(BOARD.aIn1->Read() < 0.3F && !heating) {
-		heating = true;
+
+	if(BOARD.in0->Read() != 0) {
+		if(BOARD.aIn1->Read() > 0.7F && heating) {
+			heating = false;
+		}else if(BOARD.aIn1->Read() < 0.3F && !heating) {
+			heating = true;
+		}
+
+		BOARD.led2->Write(heating);
+	}else{
+		BOARD.led2->Write(false);
 	}
-	BOARD.led2->Write(heating);
-	LOG_INF("[controlloop] Heating: %d  Temperature: %d", heating, static_cast<int>(BOARD.aIn1->Read()*1000));
+
+	LOG_INF("[controlloop] Enabled: %d   Heating: %d  Temperature: %d", BOARD.in0->Read(), heating, static_cast<int>(BOARD.aIn1->Read()*1000));
 }
 
 void hw_mock() {
