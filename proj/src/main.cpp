@@ -191,8 +191,18 @@ public:
 
 
 
+/*
+Pinning:
 
+| Control | Testboard |
+| aIn1		| aOut0     |
+| aOut0		| aIn1      |
+| led2		| in0       |
+| led3		| in1       |
+| in0			| led2      |
+| in1			| led3      |
 
+*/
 
 
 class Board {
@@ -206,6 +216,45 @@ public:
 	AnalogIn* aIn0;
 	AnalogIn* aIn1;
 	AnalogOut* aOut0;
+
+	void Init() {
+		init_io_logic();
+		init_io_adc();
+		init_io_dac();
+	}
+
+	void init_io_logic() {
+		BOARD.in0 = new Button(GPIO_DT_SPEC_GET(IN0_NODE, gpios));
+		BOARD.in1 = new Button(GPIO_DT_SPEC_GET(IN1_NODE, gpios));
+
+		BOARD.led0 = new Button(GPIO_DT_SPEC_GET(LED0_NODE, gpios), GPIO_OUTPUT_INACTIVE);
+		BOARD.led1 = new Button(GPIO_DT_SPEC_GET(LED1_NODE, gpios), GPIO_OUTPUT_INACTIVE);
+		BOARD.led2 = new Button(GPIO_DT_SPEC_GET(LED2_NODE, gpios), GPIO_OUTPUT_INACTIVE);
+		BOARD.led3 = new Button(GPIO_DT_SPEC_GET(LED3_NODE, gpios), GPIO_OUTPUT_INACTIVE);
+
+		BOARD.in0->Init();
+		BOARD.in1->Init();
+
+		BOARD.led0->Init();
+		BOARD.led1->Init();
+		BOARD.led2->Init();
+		BOARD.led3->Init();
+	}
+
+	void init_io_adc() {
+		BOARD.aIn0 = new AnalogIn(DEVICE_DT_GET(ADC_NODE), DT_IO_CHANNELS_INPUT_BY_IDX(DT_PATH(zephyr_user), 0));
+		BOARD.aIn1 = new AnalogIn(DEVICE_DT_GET(ADC_NODE), DT_IO_CHANNELS_INPUT_BY_IDX(DT_PATH(zephyr_user), 1));
+
+		BOARD.aIn0->Init();
+		BOARD.aIn1->Init();
+	}
+
+	void init_io_dac() {
+		static const struct device *dac_dev = DEVICE_DT_GET(DAC_NODE);
+		BOARD.aOut0 = new AnalogOut(dac_dev, DT_PROP(ZEPHYR_USER_NODE, dac_channel_id), DT_PROP(ZEPHYR_USER_NODE, dac_resolution));
+
+		BOARD.aOut0->Init();
+	}
 
 
 	Button* GetLoginOut(const char* name) {
@@ -335,6 +384,12 @@ SHELL_STATIC_SUBCMD_SET_CREATE(sub_io,
 SHELL_CMD_REGISTER(io, &sub_io, "IO commands", NULL);
 
 
+
+
+
+
+
+
 void controlloop(){
 	static bool heating = false;
 	if(BOARD.aIn1->Read() > 0.7F && heating) {
@@ -378,134 +433,12 @@ void controlloop_task(void)
 
 
 
-/*
-struct FrameData {
-	struct Buffer {
-		uint8_t buffer[10];
-		size_t idx;
-	} in, frame;
-	int64_t lastDataTime;
-	int64_t frameDuration;
-};
-
-K_SEM_DEFINE(dataPackageSemaphore, 0, 1);
-static void uart_fifo_callback(const struct device *dev, void *user_data)
-{
-	struct FrameData* buffer = (struct FrameData*)user_data;
-
-	if (!uart_irq_update(dev)) {
-		LOG_WRN("UART IRQ Fail");
-		return;
-	}
-
-	if (uart_irq_tx_ready(dev)) {
-		uart_irq_tx_disable(dev);
-	}
-
-	if (uart_irq_rx_ready(dev)) {
-		uint8_t recvData;
-		uart_fifo_read(dev, &recvData, 1);
-		int64_t now = k_uptime_get();
-		if((buffer->lastDataTime + buffer->frameDuration) < now){
-			buffer->in.idx = 0;
-			for(size_t idx = 0; idx < sizeof(buffer->in.buffer)-1; idx++) {
-				buffer->in.buffer[idx] = 0;
-			}
-		}
-		
-
-		if(buffer->in.idx == 0) 
-			buffer->lastDataTime = now;
-
-		if(buffer->in.idx < sizeof(buffer->in.buffer)-1) {
-			buffer->in.buffer[buffer->in.idx++] = recvData;
-		} else {
-			for(size_t idx = 0; idx < sizeof(buffer->in.buffer); idx++) {
-				if(idx < buffer->in.idx)
-					buffer->frame.buffer[idx] = buffer->in.buffer[idx];
-				else
-					buffer->frame.buffer[idx] = 0;
-			}
-			buffer->frame.idx = buffer->in.idx;
-			buffer->in.idx = 0;
-			k_sem_give(&dataPackageSemaphore);
-		}
-	}
-}
-
-struct FrameData frameData;
-void dataParser(void)
-{
-	LOG_INF("[dataParser] Init");
-	const struct device *uart_dev = device_get_binding(UART_NODE);
-	if(!device_is_ready(uart_dev)) {
-		LOG_ERR("Can't setup " UART_NODE "");
-		return;
-	}
-
-	frameData.frameDuration = 10;
-	uart_irq_callback_user_data_set(uart_dev, uart_fifo_callback, &frameData);
-	uart_irq_rx_enable(uart_dev);
-
-	LOG_INF("[dataParser] Run");
-	for (size_t loopIter = 0;;loopIter++) {
-		if (k_sem_take(&dataPackageSemaphore, K_MSEC(10000)) != 0) {
-			LOG_INF("[dataParser] Timeout");
-			LOG_HEXDUMP_DBG(frameData.in.buffer, sizeof(frameData.in.buffer), "Buffer");
-    } else {
-			printk("[dataParser] '%s'\n", frameData.frame.buffer);
-			LOG_HEXDUMP_DBG(frameData.frame.buffer, sizeof(frameData.frame.buffer), "Buffer");
-		}
-	}
-}
-*/
-
-
-
-void init_io_logic() {
-	BOARD.in0 = new Button(GPIO_DT_SPEC_GET(IN0_NODE, gpios));
-	BOARD.in1 = new Button(GPIO_DT_SPEC_GET(IN1_NODE, gpios));
-
-	BOARD.led0 = new Button(GPIO_DT_SPEC_GET(LED0_NODE, gpios), GPIO_OUTPUT_INACTIVE);
-	BOARD.led1 = new Button(GPIO_DT_SPEC_GET(LED1_NODE, gpios), GPIO_OUTPUT_INACTIVE);
-	BOARD.led2 = new Button(GPIO_DT_SPEC_GET(LED2_NODE, gpios), GPIO_OUTPUT_INACTIVE);
-	BOARD.led3 = new Button(GPIO_DT_SPEC_GET(LED3_NODE, gpios), GPIO_OUTPUT_INACTIVE);
-
-	BOARD.in0->Init();
-	BOARD.in1->Init();
-
-	BOARD.led0->Init();
-	BOARD.led1->Init();
-	BOARD.led2->Init();
-	BOARD.led3->Init();
-}
-
-
-void init_io_adc() {
-	BOARD.aIn0 = new AnalogIn(DEVICE_DT_GET(ADC_NODE), DT_IO_CHANNELS_INPUT_BY_IDX(DT_PATH(zephyr_user), 0));
-	BOARD.aIn1 = new AnalogIn(DEVICE_DT_GET(ADC_NODE), DT_IO_CHANNELS_INPUT_BY_IDX(DT_PATH(zephyr_user), 1));
-
-	BOARD.aIn0->Init();
-	BOARD.aIn1->Init();
-}
-
-
-void init_io_dac() {
-	static const struct device *dac_dev = DEVICE_DT_GET(DAC_NODE);
-	BOARD.aOut0 = new AnalogOut(dac_dev, DT_PROP(ZEPHYR_USER_NODE, dac_channel_id), DT_PROP(ZEPHYR_USER_NODE, dac_resolution));
-
-	BOARD.aOut0->Init();
-}
-
-
 
 void main(void)
 {
 	LOG_INF("[BOARD]: %s", CONFIG_BOARD);
 
-	init_io_logic();
-	init_io_adc();
-	init_io_dac();
+	BOARD.Init();
 
 	k_timer_start(&timer_controlloop, K_MSEC(500), K_MSEC(500));
 
