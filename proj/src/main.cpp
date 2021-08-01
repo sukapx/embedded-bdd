@@ -30,9 +30,10 @@ long blinkInterval = 100;
 
 struct DeviceState {
 	enum State {
-		TESTFRAMEWORK,
-		DEMO,
-		CONTROLLOOP
+		TESTFRAMEWORK,  // Bare testing
+		DEMO,						// toggle GPIOs do Analog read / write
+		CONTROLLOOP,		// Active controlloop
+		HW_MOCK					// Mock Hardware for Tests
 	};
 };
 
@@ -81,14 +82,6 @@ public:
 			gpio_pin_set(m_button.port, m_button.pin, state);
 	}
 };
-
-Button* in0;
-Button* in1;
-Button* led0;
-Button* led1;
-Button* led2;
-Button* led3;
-
 
 #include <drivers/adc.h>
 #define ADC_NUM_CHANNELS	DT_PROP_LEN(DT_PATH(zephyr_user), io_channels)
@@ -142,17 +135,6 @@ public:
 	}
 };
 
-AnalogIn* aIn0;
-AnalogIn* aIn1;
-
-void init_io_adc() {
-	aIn0 = new AnalogIn(DEVICE_DT_GET(ADC_NODE), DT_IO_CHANNELS_INPUT_BY_IDX(DT_PATH(zephyr_user), 0));
-	aIn1 = new AnalogIn(DEVICE_DT_GET(ADC_NODE), DT_IO_CHANNELS_INPUT_BY_IDX(DT_PATH(zephyr_user), 1));
-
-	aIn0->Init();
-	aIn1->Init();
-}
-
 
 
 
@@ -205,14 +187,73 @@ public:
 	}
 };
 
-AnalogOut* aOut0;
 
-void init_io_dac() {
-	static const struct device *dac_dev = DEVICE_DT_GET(DAC_NODE);
-	aOut0 = new AnalogOut(dac_dev, DT_PROP(ZEPHYR_USER_NODE, dac_channel_id), DT_PROP(ZEPHYR_USER_NODE, dac_resolution));
 
-	aOut0->Init();
-}
+
+
+
+
+
+
+class Board {
+public:
+	Button* in0;
+	Button* in1;
+	Button* led0;
+	Button* led1;
+	Button* led2;
+	Button* led3;
+	AnalogIn* aIn0;
+	AnalogIn* aIn1;
+	AnalogOut* aOut0;
+
+
+	Button* GetLoginOut(const char* name) {
+		Button* output = NULL;
+		if(strcmp("led0", name) == 0) {
+			output = led0;
+		}else if(strcmp("led1", name) == 0) {
+			output = led1;
+		}else if(strcmp("led2", name) == 0) {
+			output = led2;
+		}else if(strcmp("led3", name) == 0) {
+			output = led3;
+		}
+		return output;
+	}
+
+	
+	Button* GetLoginIn(const char* name) {
+		Button* input = NULL;
+		if(strcmp("in0", name) == 0) {
+			input = in0;
+		}else if(strcmp("in1", name) == 0) {
+			input = in1;
+		}
+		return input;
+	}
+
+	AnalogOut* GetAnalogOut(const char* name) {
+		AnalogOut* aOut = NULL;
+		if(strcmp("aOut0", name) == 0) {
+			aOut = aOut0;
+		}
+		return aOut;
+	}
+	
+	AnalogIn* GetAnalogIn(const char* name) {
+		AnalogIn* aIn = NULL;
+		if(strcmp("aIn0", name) == 0) {
+			aIn = aIn0;
+		}else if(strcmp("aIn1", name) == 0) {
+			aIn = aIn1;
+		}
+		return aIn;
+	}
+};
+
+Board BOARD;
+
 
 
 
@@ -224,31 +265,17 @@ static int cmd_io_set(const struct shell *shell, size_t argc, char **argv)
 		return -1;
 	}
 
-	Button* output = NULL;
-	if(strcmp("led0", argv[1]) == 0) {
-		output = led0;
-	}else if(strcmp("led1", argv[1]) == 0) {
-		output = led1;
-	}else if(strcmp("led2", argv[1]) == 0) {
-		output = led2;
-	}else if(strcmp("led3", argv[1]) == 0) {
-		output = led3;
-	}
-
+	Button* output = BOARD.GetLoginOut(argv[1]);
 	if(output != NULL) {
 		auto value = atoi(argv[2]);
 		output->Write(value);
 		return 0;
 	}
 
-	AnalogOut* aOut = NULL;
-	if(strcmp("aOut0", argv[1]) == 0) {
-		aOut = aOut0;
-	}
-
+	AnalogOut* aOut = BOARD.GetAnalogOut(argv[1]);
 	if(aOut != NULL) {
 		auto value = atoi(argv[2]);
-		aOut0->Write(value * 0.001f);
+		BOARD.aOut0->Write(value * 0.001f);
 		return 0;
 	}
 
@@ -263,26 +290,13 @@ static int cmd_io_get(const struct shell *shell, size_t argc, char **argv)
 		return -1;
 	}
 
-	Button* input = NULL;
-	if(strcmp("in0", argv[1]) == 0) {
-		input = in0;
-	}else if(strcmp("in1", argv[1]) == 0) {
-		input = in1;
-	}
-
+	Button* input = BOARD.GetLoginIn(argv[1]);
 	if(input != NULL) {
 		shell_print(shell, "%d", input->Read());
 		return 0;
 	}
 
-
-	AnalogIn* aIn = NULL;
-	if(strcmp("aIn0", argv[1]) == 0) {
-		aIn = aIn0;
-	}else if(strcmp("aIn1", argv[1]) == 0) {
-		aIn = aIn1;
-	}
-
+	AnalogIn* aIn = BOARD.GetAnalogIn(argv[1]);
 	if(aIn != NULL) {
 		shell_print(shell, "%d", static_cast<int>(aIn->Read()*1000));
 		return 0;
@@ -308,7 +322,8 @@ static int cmd_io_devicestate(const struct shell *shell, size_t argc, char **arg
 SHELL_SUBCMD_DICT_SET_CREATE(sub_io_devicestate, cmd_io_devicestate,
 	(DEMO, DeviceState::DEMO),
 	(CONTROLLOOP, DeviceState::CONTROLLOOP),
-	(TESTFRAMEWORK, DeviceState::TESTFRAMEWORK)
+	(TESTFRAMEWORK, DeviceState::TESTFRAMEWORK),
+	(HW_MOCK, DeviceState::HW_MOCK)
 );
 
 SHELL_STATIC_SUBCMD_SET_CREATE(sub_io,
@@ -320,19 +335,42 @@ SHELL_STATIC_SUBCMD_SET_CREATE(sub_io,
 SHELL_CMD_REGISTER(io, &sub_io, "IO commands", NULL);
 
 
+void controlloop(){
+	static bool heating = false;
+	if(BOARD.aIn1->Read() > 0.7F && heating) {
+		heating = false;
+	}else if(BOARD.aIn1->Read() < 0.3F && !heating) {
+		heating = true;
+	}
+	BOARD.led2->Write(heating);
+	LOG_INF("[controlloop] Heating: %d  Temperature: %d", heating, static_cast<int>(BOARD.aIn1->Read()*1000));
+}
+
+void hw_mock() {
+	static int temperature = 0;
+	if(BOARD.in0->Read()){
+		if(temperature < 950)
+			temperature += 25;
+	}else{
+		if(temperature > 50)
+			temperature -= 25;
+	}
+	BOARD.aOut0->Write(temperature*0.001F);
+	LOG_INF("[hw_mock] IsHeating: %d Temperature: %d", BOARD.in0->Read(), temperature);
+}
 
 
 K_TIMER_DEFINE(timer_controlloop, NULL, NULL);
-void controlloop(void)
+void controlloop_task(void)
 {
 	LOG_INF("[controlloop] Run");
 	for (size_t loopIter = 0;;loopIter++) {
 		k_timer_status_sync(&timer_controlloop);
 		LOG_DBG("[controlloop] %d", loopIter);
 		if(device_state == DeviceState::CONTROLLOOP){
-			LOG_INF("[controlloop] States: %d, %d", in0->Read(), in1->Read());
-			led2->Write(in0->Read());
-			led3->Write(in1->Read());
+			controlloop();
+		} else if(device_state == DeviceState::HW_MOCK){
+			hw_mock();
 		}
 	}
 }
@@ -424,26 +462,41 @@ void dataParser(void)
 
 
 
-
-
-
 void init_io_logic() {
-	in0 = new Button(GPIO_DT_SPEC_GET(IN0_NODE, gpios));
-	in1 = new Button(GPIO_DT_SPEC_GET(IN1_NODE, gpios));
+	BOARD.in0 = new Button(GPIO_DT_SPEC_GET(IN0_NODE, gpios));
+	BOARD.in1 = new Button(GPIO_DT_SPEC_GET(IN1_NODE, gpios));
 
-	led0 = new Button(GPIO_DT_SPEC_GET(LED0_NODE, gpios), GPIO_OUTPUT_INACTIVE);
-	led1 = new Button(GPIO_DT_SPEC_GET(LED1_NODE, gpios), GPIO_OUTPUT_INACTIVE);
-	led2 = new Button(GPIO_DT_SPEC_GET(LED2_NODE, gpios), GPIO_OUTPUT_INACTIVE);
-	led3 = new Button(GPIO_DT_SPEC_GET(LED3_NODE, gpios), GPIO_OUTPUT_INACTIVE);
+	BOARD.led0 = new Button(GPIO_DT_SPEC_GET(LED0_NODE, gpios), GPIO_OUTPUT_INACTIVE);
+	BOARD.led1 = new Button(GPIO_DT_SPEC_GET(LED1_NODE, gpios), GPIO_OUTPUT_INACTIVE);
+	BOARD.led2 = new Button(GPIO_DT_SPEC_GET(LED2_NODE, gpios), GPIO_OUTPUT_INACTIVE);
+	BOARD.led3 = new Button(GPIO_DT_SPEC_GET(LED3_NODE, gpios), GPIO_OUTPUT_INACTIVE);
 
-	in0->Init();
-	in1->Init();
+	BOARD.in0->Init();
+	BOARD.in1->Init();
 
-	led0->Init();
-	led1->Init();
-	led2->Init();
-	led3->Init();
+	BOARD.led0->Init();
+	BOARD.led1->Init();
+	BOARD.led2->Init();
+	BOARD.led3->Init();
 }
+
+
+void init_io_adc() {
+	BOARD.aIn0 = new AnalogIn(DEVICE_DT_GET(ADC_NODE), DT_IO_CHANNELS_INPUT_BY_IDX(DT_PATH(zephyr_user), 0));
+	BOARD.aIn1 = new AnalogIn(DEVICE_DT_GET(ADC_NODE), DT_IO_CHANNELS_INPUT_BY_IDX(DT_PATH(zephyr_user), 1));
+
+	BOARD.aIn0->Init();
+	BOARD.aIn1->Init();
+}
+
+
+void init_io_dac() {
+	static const struct device *dac_dev = DEVICE_DT_GET(DAC_NODE);
+	BOARD.aOut0 = new AnalogOut(dac_dev, DT_PROP(ZEPHYR_USER_NODE, dac_channel_id), DT_PROP(ZEPHYR_USER_NODE, dac_resolution));
+
+	BOARD.aOut0->Init();
+}
+
 
 
 void main(void)
@@ -461,15 +514,15 @@ void main(void)
 		LOG_DBG("loopIter %d", loopIter);
 		if(device_state == DeviceState::DEMO){
 			float dac_value = (loopIter%1000)*0.001;
-			aOut0->Write(dac_value);
+			BOARD.aOut0->Write(dac_value);
 
 			if((loopIter%20) == 0) {
 				LOG_INF("DAC: %d", static_cast<int>(dac_value*1000));
-				LOG_INF("ADC0: %d", static_cast<int>(aIn0->Read()*1000));
-				LOG_INF("ADC1: %d", static_cast<int>(aIn1->Read()*1000));
+				LOG_INF("ADC0: %d", static_cast<int>(BOARD.aIn0->Read()*1000));
+				LOG_INF("ADC1: %d", static_cast<int>(BOARD.aIn1->Read()*1000));
 			}
 		}
-		led0->Write(!led0->Read());
+		BOARD.led0->Write(!BOARD.led0->Read());
 		k_msleep(blinkInterval);
 	}
 }
@@ -477,7 +530,7 @@ void main(void)
 #define STACKSIZE 1024
 #define PRIORITY 7
 
-K_THREAD_DEFINE(controlloop_id, STACKSIZE, controlloop, NULL, NULL, NULL,
+K_THREAD_DEFINE(controlloop_id, STACKSIZE, controlloop_task, NULL, NULL, NULL,
 		PRIORITY, 0, 0);
 //K_THREAD_DEFINE(dataParser_id, STACKSIZE, dataParser, NULL, NULL, NULL,
 //		PRIORITY, 0, 0);
