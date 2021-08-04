@@ -8,6 +8,13 @@ set(BOARD myesp32)
 find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 project(proj)
 
+include(lib/CMakeLists.txt)
+
 FILE(GLOB app_sources_c src/*.c)
 FILE(GLOB app_sources_cpp src/*.cpp)
-target_sources(app PRIVATE ${app_sources_c} ${app_sources_cpp})
+set(app_sources
+  ${app_sources_c}
+  ${app_sources_cpp}
+)
+
+target_sources(app PRIVATE ${app_sources} ${lib_sources})
