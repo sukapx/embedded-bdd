@@ -1,5 +1,7 @@
 #include "main.h"
 #include "Board.h"
+#include <shell/shell.h>
+#include <stdlib.h>
 
 
 static int cmd_io_set(const struct shell *shell, size_t argc, char **argv)

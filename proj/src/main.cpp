@@ -30,6 +30,8 @@ void controlloop(){
 	heater.SetEnabled(BOARD.in0->Read());
 	heater.SetCurrentTemperature(BOARD.aIn1->Read());
 
+	heater.Process();
+
 	BOARD.led2->Write(heater.GetHeaterState());
 
 	printk("[controlloop] Enabled: %d   Heating: %d  Temperature: %d\n",

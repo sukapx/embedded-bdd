@@ -12,6 +12,7 @@ include(lib/CMakeLists.txt)
 
 FILE(GLOB app_sources_c src/*.c)
 FILE(GLOB app_sources_cpp src/*.cpp)
+
 set(app_sources
   ${app_sources_c}
   ${app_sources_cpp}
