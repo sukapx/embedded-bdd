@@ -48,6 +48,38 @@
       ]
     },
     {
+      "label": "Flash ST-Link Testboard",
+      "type": "shell",
+      "group": "build",
+      "options": {
+        "env": {
+          "GNUARMEMB_TOOLCHAIN_PATH": "D:/workspace/toolchain/gcc",
+          "CROSS_COMPILE": "arm-none-eabi-",
+          "ZEPHYR_TOOLCHAIN_VARIANT": "gnuarmemb"
+        }
+      },
+			"command": "ST-LINK_CLI.exe -c SWD SWCLK=4 SN=56FF70064971545016211087 -p ${workspaceFolder}/build_mystm32/zephyr/zephyr.hex -Rst",
+      "problemMatcher": [
+        "$gcc"
+      ]
+    },
+    {
+      "label": "Flash ST-Link Control",
+      "type": "shell",
+      "group": "build",
+      "options": {
+        "env": {
+          "GNUARMEMB_TOOLCHAIN_PATH": "D:/workspace/toolchain/gcc",
+          "CROSS_COMPILE": "arm-none-eabi-",
+          "ZEPHYR_TOOLCHAIN_VARIANT": "gnuarmemb"
+        }
+      },
+			"command": "ST-LINK_CLI.exe -c SWD SWCLK=4 SN=49FF69064983515154320987 -p ${workspaceFolder}/build_mystm32/zephyr/zephyr.hex -Rst",
+      "problemMatcher": [
+        "$gcc"
+      ]
+    },
+    {
       "label": "Debug MySTM32",
       "type": "shell",
       "group": "build",
