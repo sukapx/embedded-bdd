@@ -3,6 +3,44 @@
 #include <shell/shell.h>
 #include <stdlib.h>
 
+#include "ModuleCom.h"
+
+static int cmd_io_config(const struct shell *shell, size_t argc, char **argv)
+{
+	if(argc < 2) {
+		for(size_t idx = 0; idx < sizeof(configValues)/sizeof(configValues[0]); idx++){
+			shell_print(shell, "val %3d: %5d", idx, configValues[idx]);
+		}
+		return 0;
+	}else{
+		size_t idx = atoi(argv[1]);
+		if(idx < sizeof(configValues)/sizeof(configValues[0])){
+			shell_print(shell, "val %3d: %5d", idx, configValues[idx]);
+		}else{
+			shell_print(shell, "Error: Out of bounds %d", idx);
+		}
+	}
+	return 0;
+}
+
+static int cmd_io_modcom(const struct shell *shell, size_t argc, char **argv)
+{
+	if(argc < 4) {
+		shell_print(shell, "Usage: io modcom <fun> <subfun> <value>");
+		return -1;
+	}
+
+	FuncFrame frame;
+	frame.func = atoi(argv[1]);
+	frame.subFunc = atoi(argv[2]);
+	frame.i32 = atoi(argv[3]);
+
+	shell_print(shell, "Send: Fun: %d, SubFun: %d, Val: %08x",
+		frame.func, frame.subFunc, frame.i32);
+
+	dataSend(reinterpret_cast<uint8_t*>(&frame), sizeof(frame));
+	return 0;
+}
 
 static int cmd_io_set(const struct shell *shell, size_t argc, char **argv)
 {
@@ -73,6 +111,8 @@ SHELL_SUBCMD_DICT_SET_CREATE(sub_io_devicestate, cmd_io_devicestate,
 );
 
 SHELL_STATIC_SUBCMD_SET_CREATE(sub_io,
+	SHELL_CMD(config, NULL, "List configs", cmd_io_config),
+	SHELL_CMD(modcom, NULL, "ModCom Send", cmd_io_modcom),
 	SHELL_CMD(set, NULL, "Set", cmd_io_set),
 	SHELL_CMD(get, NULL, "Get", cmd_io_get),
 	SHELL_CMD(devicestate, &sub_io_devicestate, "devicestate DEMO, CONTROLLOOP, TESTFRAMEWORK", cmd_io_devicestate),

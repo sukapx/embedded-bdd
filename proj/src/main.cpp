@@ -7,14 +7,14 @@
 #include <sys/printk.h>
 #include <shell/shell.h>
 
-
 #include "Board.h"
+#include "ModuleCom.h"
 
 //LOG_MODULE_DECLARE(main);
 LOG_MODULE_REGISTER(main, LOG_LEVEL_INF);
 
 
-volatile long blinkInterval = 100;
+volatile long blinkInterval = 1000;
 volatile DeviceState::State device_state = DeviceState::DEMO;
 
 
@@ -27,19 +27,33 @@ Heater heater;
  * aIn1 is seen as Temperature
  */
 void controlloop(){
+	static int iteration = 0;
+
 	heater.SetEnabled(BOARD.in0->Read());
 	heater.SetCurrentTemperature(BOARD.aIn1->Read());
+	heater.SetConfigTemperatureMin(configValues[ConfigValue::TEMPERATURE_MIN] * 0.001F);
+	heater.SetConfigTemperatureMax(configValues[ConfigValue::TEMPERATURE_MAX] * 0.001F);
 
 	heater.Process();
 
 	BOARD.led2->Write(heater.GetHeaterState());
 
-	printk("[controlloop] Enabled: %d   Heating: %d  Temperature: %d\n",
-				BOARD.in0->Read(), heater.GetHeaterState(), static_cast<int>(BOARD.aIn1->Read()*1000));
+	if((iteration++%10) == 0) {
+		FuncFrame frame;
+		frame.func = 1;
+		frame.subFunc = 0;
+		frame.i32 = BOARD.aIn1->Read();
+		dataSendFrame(frame);
+
+		printk("[controlloop] Enabled: %d   Heating: %d  Temperature: %d\n",
+					BOARD.in0->Read(), heater.GetHeaterState(), static_cast<int>(BOARD.aIn1->Read()*1000));
+	}
 }
 
 void hw_mock() {
 	static int temperature = 0;
+	static int iteration = 0;
+
 	if(BOARD.in0->Read()){
 		if(temperature < 950)
 			temperature += 25;
@@ -48,7 +62,10 @@ void hw_mock() {
 			temperature -= 25;
 	}
 	BOARD.aOut0->Write(temperature*0.001F);
-	printk("[hw_mock] IsHeating: %d Temperature: %d\n", BOARD.in0->Read(), temperature);
+
+	if((iteration++%10) == 0) {
+		printk("[hw_mock] IsHeating: %d Temperature: %d\n", BOARD.in0->Read(), temperature);
+	}
 }
 
 
@@ -56,6 +73,7 @@ K_TIMER_DEFINE(timer_controlloop, NULL, NULL);
 void controlloop_task(void)
 {
 	LOG_INF("[controlloop] Run");
+
 	for (size_t loopIter = 0;;loopIter++) {
 		k_timer_status_sync(&timer_controlloop);
 		LOG_DBG("[controlloop] %d", loopIter);
@@ -102,5 +120,3 @@ void main(void)
 
 K_THREAD_DEFINE(controlloop_id, STACKSIZE, controlloop_task, NULL, NULL, NULL,
 		PRIORITY, 0, 0);
-//K_THREAD_DEFINE(dataParser_id, STACKSIZE, dataParser, NULL, NULL, NULL,
-//		PRIORITY, 0, 0);
