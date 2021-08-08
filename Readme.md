@@ -16,14 +16,16 @@ For testing purposes 2 Testmodes are available:
 
 ![Product Name Screen Shot](./doc/wireing.jpeg)
 
-| Control | Testboard | Signal |
-|---------|-----------|-----------------------------------------------------------------|
-| aIn1		| aOut0     | Voltage of analog temperature sensor (eg. PT1000)               |
-| aOut0		| aIn1      |                                                                 |
-| led2		| in0       | Heating signal, when high Heater is expectet to heat            |
-| led3		| in1       |                                                                 |
-| in0			| led2      | Heating enable, when high temperature regulation is enabled (eg. a switch)|
-| in1			| led3      |          |
+| Control      | Testboard | Signal |
+|--------------|-----------|-----------------------------------------------------------------|
+| aIn1 (PA07)	 | aOut0     | Voltage of analog temperature sensor (eg. PT1000)               |
+| aOut0	(PA04) | aIn1      |                                                                 |
+| led2 (PD13)	 | in0       | Heating signal, when high Heater is expectet to heat            |
+| led3 (PD15)  | in1       |                                                                 |
+| in0	(PA00)   | led2      | Heating enable, when high temperature regulation is enabled (eg. a switch)|
+| in1	(PA01)   | led3      |          |
+| TX2 (PB06)   | RX2       |          |
+| RX2 (PB07)   | TX2       |          |
 
 ![Product Name Screen Shot](./doc/hil_running.jpg)
 
