@@ -4,20 +4,35 @@
 #include <stdlib.h>
 
 #include "ModuleCom.h"
+#include "Settings.h"
 
 static int cmd_io_config(const struct shell *shell, size_t argc, char **argv)
 {
-	if(argc < 2) {
-		for(size_t idx = 0; idx < sizeof(configValues)/sizeof(configValues[0]); idx++){
-			shell_print(shell, "val %3d: %5d", idx, configValues[idx]);
+	if(argc < 2)
+	{
+		for(size_t idx = 0; idx < Settings::Size(); idx++)
+		{
+			shell_print(shell, "val %3d: %5d", 
+					idx, SETTINGS.Get(static_cast<const Settings::Value>(idx)));
 		}
-		return 0;
-	}else{
+	}
+	else
+	{
 		size_t idx = atoi(argv[1]);
-		if(idx < sizeof(configValues)/sizeof(configValues[0])){
-			shell_print(shell, "val %3d: %5d", idx, configValues[idx]);
-		}else{
+		if(idx >= Settings::Size())
+		{
 			shell_print(shell, "Error: Out of bounds %d", idx);
+		}
+		else
+		{
+			if(argc >= 3)
+			{
+				int32_t value = atoi(argv[2]);
+				SETTINGS.Set(static_cast<const Settings::Value>(idx), value);
+			}
+
+			shell_print(shell, "val %3d: %5d",
+					idx, SETTINGS.Get(static_cast<const Settings::Value>(idx)));
 		}
 	}
 	return 0;
@@ -35,7 +50,7 @@ static int cmd_io_modcom(const struct shell *shell, size_t argc, char **argv)
 	frame.subFunc = atoi(argv[2]);
 	frame.i32 = atoi(argv[3]);
 
-	shell_print(shell, "Send: Fun: %d, SubFun: %d, Val: %08x",
+	shell_print(shell, "Send: Fun: %d, SubFun: %d, Val: %d",
 		frame.func, frame.subFunc, frame.i32);
 
 	dataSend(reinterpret_cast<uint8_t*>(&frame), sizeof(frame));

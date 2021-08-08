@@ -6,6 +6,7 @@
 #include <sys/printk.h>
 #include <shell/shell.h>
 #include <drivers/uart.h>
+#include "Settings.h"
 
 #define UART_NODE DT_LABEL(DT_ALIAS(intermdule))
 
@@ -30,38 +31,48 @@ struct FrameData {
 
 
 
-typedef void (*ModuleComCallI32)(const int32_t value);
-volatile uint32_t configValues[ConfigValue::SIZE] = {0,};
+typedef void (*ModuleComCallI32)(const uint32_t subFunc, const int32_t value);
 
-void ModuleComCall_0_readback(const int32_t idx) {
-	LOG_INF("[dataParser] ModuleComCall_0_readback");
+void ModuleComCall_0(const uint32_t subFunc, const int32_t idx) {
+	LOG_INF("[dataParser] ModuleComCall_0");
 
 	FuncFrame frame;
 	frame.func = 0;
-	if(idx < ConfigValue::SIZE)
+
+	if(subFunc >= Settings::Size())
+	{
+		LOG_WRN("[dataParser] No Setting %d", idx);
+	}
+	else if(subFunc == 0 && idx == 0)
+	{
+		LOG_WRN("[dataParser] Try to Readback readback");
+	}
+	else if(subFunc == 0 && idx >= Settings::Size())
+	{
+		LOG_WRN("[dataParser] No Setting %d", idx);
+	}
+	else if(subFunc == 0)
 	{
 		frame.subFunc = idx;
-		frame.i32 = configValues[idx];
+		frame.i32 = SETTINGS.Get(static_cast<const Settings::Value>(idx));
 		dataSendFrame(frame);
-	}else{
-		frame.subFunc = 255U;
-		frame.i32 = configValues[idx];
-		dataSendFrame(frame);
+	}
+	else
+	{
+		SETTINGS.Set(static_cast<const Settings::Value>(subFunc), idx);
 	}
 }
 
-void ModuleComCall_1(const int32_t value) {
-	LOG_INF("[dataParser] ModuleComCall_1");
-	configValues[1] = value;
+void ModuleComCall_1(const uint32_t subFunc, const int32_t value) {
+	LOG_INF("[dataParser] ModuleComCall_1 %d: %d", subFunc, value);
 }
 
-void ModuleComCall_2(const int32_t value) {
-	LOG_INF("[dataParser] ModuleComCall_2");
-	configValues[2] = value;
+void ModuleComCall_2(const uint32_t subFunc, const int32_t value) {
+	LOG_INF("[dataParser] ModuleComCall_2 %d: %d", subFunc, value);
 }
 
 const ModuleComCallI32 calls[] = {
-	ModuleComCall_0_readback,
+	ModuleComCall_0,
 	ModuleComCall_1,
 	ModuleComCall_2
 };
@@ -175,12 +186,17 @@ void dataParser(void)
 			LOG_HEXDUMP_DBG(frameData.in.buffer, sizeof(frameData.in.buffer), "Buffer");
     } else {
 			FuncFrame* funcFrame = reinterpret_cast<FuncFrame*>(frameData.in.buffer);
-			printk("[dataParser] Fun: %d, SubFun: %d, Val: %08x\n",
-				funcFrame->func, funcFrame->subFunc, funcFrame->i32);
 
-			if(funcFrame->func == 0)
-				if(funcFrame->subFunc < sizeof(calls)/sizeof(calls[0]))
-					calls[funcFrame->subFunc](funcFrame->i32);
+
+			if(SETTINGS.Get(Settings::MODCOM_LOG_ENABLE))
+			{
+				printk("[dataParser] Fun: %d, SubFun: %d, Val: %d\n",
+						funcFrame->func, funcFrame->subFunc, funcFrame->i32);
+			}
+
+			if(funcFrame->func < sizeof(calls)/sizeof(calls[0]))
+				calls[funcFrame->func](funcFrame->subFunc, funcFrame->i32);
+
 			LOG_HEXDUMP_DBG(frameData.frame.buffer, sizeof(frameData.frame.buffer), "Buffer");
 		}
 	}

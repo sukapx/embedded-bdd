@@ -9,6 +9,7 @@
 
 #include "Board.h"
 #include "ModuleCom.h"
+#include "Settings.h"
 
 //LOG_MODULE_DECLARE(main);
 LOG_MODULE_REGISTER(main, LOG_LEVEL_INF);
@@ -31,22 +32,25 @@ void controlloop(){
 
 	heater.SetEnabled(BOARD.in0->Read());
 	heater.SetCurrentTemperature(BOARD.aIn1->Read());
-	heater.SetConfigTemperatureMin(configValues[ConfigValue::TEMPERATURE_MIN] * 0.001F);
-	heater.SetConfigTemperatureMax(configValues[ConfigValue::TEMPERATURE_MAX] * 0.001F);
+	heater.SetConfigTemperatureMin(SETTINGS.Get(Settings::TEMPERATURE_MIN) * 0.001F);
+	heater.SetConfigTemperatureMax(SETTINGS.Get(Settings::TEMPERATURE_MAX) * 0.001F);
 
 	heater.Process();
 
 	BOARD.led2->Write(heater.GetHeaterState());
 
-	if((iteration++%100) == 0) {
+	if((iteration++%10) == 0) {
 		FuncFrame frame;
 		frame.func = 1;
 		frame.subFunc = 0;
 		frame.i32 = static_cast<int32_t>(BOARD.aIn1->Read() * 1000.F);
 		dataSendFrame(frame);
 
-		printk("[controlloop] Enabled: %d   Heating: %d  Temperature: %d\n",
-					BOARD.in0->Read(), heater.GetHeaterState(), static_cast<int>(BOARD.aIn1->Read()*1000));
+		if(SETTINGS.Get(Settings::CONTROL_LOG_ENABLE))
+		{
+			printk("[controlloop] Enabled: %d   Heating: %d  Temperature: %d\n",
+						BOARD.in0->Read(), heater.GetHeaterState(), static_cast<int>(BOARD.aIn1->Read()*1000));
+		}
 	}
 }
 
@@ -60,9 +64,12 @@ void hw_mock() {
 	mockHardware.Process();
 	BOARD.aOut0->Write(mockHardware.GetTemperature());
 
-	if((iteration++%100) == 0) {
-		printk("[hw_mock] IsHeating: %d Temperature: %d\n", 
-		BOARD.in0->Read(), static_cast<int32_t>(mockHardware.GetTemperature()*1000U));
+	if((iteration++%10) == 0) {
+		if(SETTINGS.Get(Settings::CONTROL_LOG_ENABLE))
+		{
+			printk("[hw_mock] IsHeating: %d Temperature: %d\n", 
+						BOARD.in0->Read(), static_cast<int32_t>(mockHardware.GetTemperature()*1000U));
+		}
 	}
 }
 

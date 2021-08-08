@@ -13,18 +13,6 @@ struct FuncFrame
   };
 };
 
-struct ConfigValue
-{
-  enum Value {
-    CALLBACK,
-    TEMPERATURE_MIN,
-    TEMPERATURE_MAX,
-    SIZE
-  };
-};
-
-extern volatile uint32_t configValues[ConfigValue::SIZE];
-
 /**
  * @brief Sends data on Serial
  * Will block thread until data is send or timeout
