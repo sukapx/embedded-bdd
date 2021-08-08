@@ -38,11 +38,11 @@ void controlloop(){
 
 	BOARD.led2->Write(heater.GetHeaterState());
 
-	if((iteration++%10) == 0) {
+	if((iteration++%100) == 0) {
 		FuncFrame frame;
 		frame.func = 1;
 		frame.subFunc = 0;
-		frame.i32 = BOARD.aIn1->Read();
+		frame.i32 = static_cast<int32_t>(BOARD.aIn1->Read() * 1000.F);
 		dataSendFrame(frame);
 
 		printk("[controlloop] Enabled: %d   Heating: %d  Temperature: %d\n",
@@ -56,14 +56,14 @@ void hw_mock() {
 
 	if(BOARD.in0->Read()){
 		if(temperature < 950)
-			temperature += 25;
+			temperature += 1;
 	}else{
 		if(temperature > 50)
-			temperature -= 25;
+			temperature -= 1;
 	}
 	BOARD.aOut0->Write(temperature*0.001F);
 
-	if((iteration++%10) == 0) {
+	if((iteration++%100) == 0) {
 		printk("[hw_mock] IsHeating: %d Temperature: %d\n", BOARD.in0->Read(), temperature);
 	}
 }
@@ -95,7 +95,7 @@ void main(void)
 
 	BOARD.Init();
 
-	k_timer_start(&timer_controlloop, K_MSEC(500), K_MSEC(100));
+	k_timer_start(&timer_controlloop, K_MSEC(500), K_MSEC(20));
 
 	LOG_INF("[main] Run");
 	for (size_t loopIter = 0;;loopIter++) {
