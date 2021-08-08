@@ -9,7 +9,7 @@
 
 #define UART_NODE DT_LABEL(DT_ALIAS(intermdule))
 
-LOG_MODULE_REGISTER(ModCom, LOG_LEVEL_INF);
+LOG_MODULE_REGISTER(ModCom, LOG_LEVEL_WRN);
 
 struct FrameData {
 	struct Buffer {
