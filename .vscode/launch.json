@@ -8,7 +8,7 @@
       "name": "(Windows) lib_tests",
       "type": "cppvsdbg",
       "request": "launch",
-      "program": "${workspaceFolder}/proj/lib/build/Debug/lib_tests",
+      "program": "${workspaceFolder}/build_codetest/Debug/lib_tests",
       "args": [],
       "stopAtEntry": false,
       "cwd": "${fileDirname}",
