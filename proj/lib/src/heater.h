@@ -1,7 +1,10 @@
+#pragma once
+
 class IHeater
 {
 public:
   virtual void SetEnabled(const bool enabled) = 0;
+  virtual bool GetEnabled() const = 0;
   virtual void SetCurrentTemperature(const float temp) = 0;
   virtual bool GetHeaterState() const = 0;
   virtual void Process() = 0;
@@ -30,6 +33,11 @@ class Heater : public IHeater
     virtual void SetEnabled(const bool enabled) override
     {
       m_isEnabled = enabled;
+    }
+
+    virtual bool GetEnabled() const override
+    {
+      return m_isEnabled;
     }
 
     virtual void SetCurrentTemperature(const float temp) override
