@@ -14,7 +14,8 @@ For testing purposes 2 Testmodes are available:
 - HW Mock, where the Testboard simulates the mechanics and physics continously
 
 
-![Product Name Screen Shot](./doc/wireing.jpeg)
+![Photo of Control and Tesboard](./doc/wireing.jpeg)
+
 
 | Control      | Testboard | Signal |
 |--------------|-----------|-----------------------------------------------------------------|
@@ -28,7 +29,11 @@ For testing purposes 2 Testmodes are available:
 | RX2 (PB07)   | TX2       |          |
 
 ![Product Name Screen Shot](./doc/hil_running.jpg)
+![PiL Measurement plot](./doc/Processor_in_the_Loop__Run_Enabled_500-600.png)
 
 
 # Requirements
-[Gherkins Requirements](https://gitlab.com/dominik.gausa/csharp_bdd/-/blob/master/Features/embedded.feature)
+BDD requirements & testing using [C# Specflow](https://gitlab.com/dominik.gausa/csharp_bdd/-/blob/master/Features/embedded.feature)
+
+BDD requirements & testing using [Python Behave](
+https://gitlab.com/dominik.gausa/zephyr-os-multiboard/-/blob/master/features/PiL.feature)
