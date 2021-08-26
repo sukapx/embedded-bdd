@@ -32,6 +32,37 @@ For testing purposes 2 Testmodes are available:
 ![PiL Measurement plot](./doc/Processor_in_the_Loop__Run_Enabled_500-600.png)
 
 
+```
+Feature: Processor in the Loop
+
+  Scenario: Run Enabled 250-750 
+    Given device
+    And set_temp_min is set to 250
+    And set_temp_max is set to 750
+    And sig_led2 is set to 1      
+    When running 30s
+    Then pass
+
+  Scenario: Run Enabled 500-600 
+    Given device
+    And set_temp_min is set to 500
+    And set_temp_max is set to 600
+    And sig_led2 is set to 1
+    When running 30s
+    Then pass
+
+  Scenario: Run 2s Disabled 
+    Given device
+    And sig_led2 is set to 0
+    When running 10s
+    Then pass
+    
+2 features passed, 0 failed, 0 skipped
+6 scenarios passed, 0 failed, 0 skipped
+25 steps passed, 0 failed, 0 skipped, 0 undefined
+Took 1m11.753s
+```
+
 # Requirements
 BDD requirements & testing using [C# Specflow](https://gitlab.com/dominik.gausa/csharp_bdd/-/blob/master/Features/embedded.feature)
 
