@@ -1,9 +1,9 @@
 #include <stdio.h>
 
-#include <gtest/gtest.h>
-
 #include <heater.h>
 #include <MockHardware.h>
+
+#include "common.h"
 
 struct HeaterSettings {
   float min;
@@ -42,7 +42,10 @@ class TemperatureRegulation : public ::testing::TestWithParam<HeaterSettings> {
 };
 
 
-TEST_P(TemperatureRegulation, Base) {
+TEST_P(TemperatureRegulation, Regulation_within_limits) {
+  auto logFile = GetLogFile();
+  logFile << "iteration,isEnabled,heater.GetHeaterState(),mock.GetTemperature()" << std::endl; 
+
   HeaterSettings settings = GetParam();
   heater.SetEnabled(true);
 
@@ -51,26 +54,27 @@ TEST_P(TemperatureRegulation, Base) {
 
   ASSERT_TRUE(WhenMinTemperatureIsReached(settings.min, 1000));
 
-  for(int iteration = 0; iteration < 1000; iteration++) {
+  for(int iteration = 0; iteration < 10000; iteration++) {
     Step();
     ASSERT_GE(mock.GetTemperature(), settings.min * 0.9F);
     ASSERT_LE(mock.GetTemperature(), settings.max * 1.1F);
 
     if(iteration%100 == 0) {
+      logFile << iteration << "," << isEnabled << "," << heater.GetHeaterState() << "," << mock.GetTemperature() << std::endl; 
       printf("Itr: %d, Enabled: %d, Heating: %d, Temperature: %.3f\n", 
             iteration, isEnabled, heater.GetHeaterState(), mock.GetTemperature());
     }
   }
 
-	EXPECT_EQ(false, false);
+  logFile.close();
 }
 
 
 INSTANTIATE_TEST_CASE_P(
-        InRange,
-        TemperatureRegulation,
-        ::testing::Values(
-          HeaterSettings{0.1F, 0.7F},
-          HeaterSettings{0.5F, 0.7F},
-          HeaterSettings{0.1F, 0.5F}
-        ));
+  General,
+  TemperatureRegulation,
+  ::testing::Values(
+    HeaterSettings{0.1F, 0.7F},
+    HeaterSettings{0.5F, 0.7F},
+    HeaterSettings{0.1F, 0.5F}
+  ));
