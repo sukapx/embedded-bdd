@@ -1,6 +1,7 @@
 #include "main.h"
 
 #include <stdlib.h>
+#include <stdio.h>
 
 #include <zephyr.h>
 #include <logging/log.h>
@@ -48,8 +49,11 @@ void controlloop(){
 
 		if(SETTINGS.Get(Settings::CONTROL_LOG_ENABLE))
 		{
-			printk("[controlloop] Enabled: %d   Heating: %d  Temperature: %d\n",
-						BOARD.in0->Read(), heater.GetHeaterState(), static_cast<int>(BOARD.aIn1->Read()*1000));
+			printf("[controlloop] Itr: %d, Enabled: %d, Heating: %d, Temperature: %d.%03d\n",
+						iteration,
+						BOARD.in0->Read(), heater.GetHeaterState(), 
+						static_cast<int32_t>(BOARD.aIn1->Read()),
+						static_cast<int32_t>(BOARD.aIn1->Read()*1000)%1000);
 		}
 	}
 }
@@ -67,8 +71,12 @@ void hw_mock() {
 	if((iteration++%10) == 0) {
 		if(SETTINGS.Get(Settings::CONTROL_LOG_ENABLE))
 		{
-			printk("[hw_mock] IsHeating: %d Temperature: %d\n", 
-						BOARD.in0->Read(), static_cast<int32_t>(mockHardware.GetTemperature()*1000U));
+			printf("[hw_mock] Itr: %d, Enabled: %d, Heating: %d, Temperature: %d.%03d\n", 
+						iteration,
+						BOARD.led2->Read(),
+						BOARD.in0->Read(),
+						static_cast<int32_t>(mockHardware.GetTemperature()),
+						static_cast<int32_t>(mockHardware.GetTemperature()*1000)%1000);
 		}
 	}
 }

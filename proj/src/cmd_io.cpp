@@ -12,7 +12,7 @@ static int cmd_io_config(const struct shell *shell, size_t argc, char **argv)
 	{
 		for(size_t idx = 0; idx < Settings::Size(); idx++)
 		{
-			shell_print(shell, "val %3d: %5d", 
+			shell_print(shell, "config %3d: %5d", 
 					idx, SETTINGS.Get(static_cast<const Settings::Value>(idx)));
 		}
 	}
@@ -31,7 +31,7 @@ static int cmd_io_config(const struct shell *shell, size_t argc, char **argv)
 				SETTINGS.Set(static_cast<const Settings::Value>(idx), value);
 			}
 
-			shell_print(shell, "val %3d: %5d",
+			shell_print(shell, "config %3d: %5d",
 					idx, SETTINGS.Get(static_cast<const Settings::Value>(idx)));
 		}
 	}
@@ -56,6 +56,7 @@ static int cmd_io_modcom(const struct shell *shell, size_t argc, char **argv)
 	dataSend(reinterpret_cast<uint8_t*>(&frame), sizeof(frame));
 	return 0;
 }
+
 
 static int cmd_io_set(const struct shell *shell, size_t argc, char **argv)
 {
@@ -91,13 +92,13 @@ static int cmd_io_get(const struct shell *shell, size_t argc, char **argv)
 
 	Button* input = BOARD.GetLogicIn(argv[1]);
 	if(input != NULL) {
-		shell_print(shell, "%d", input->Read());
+		shell_print(shell, "io %s: %d", argv[1], input->Read());
 		return 0;
 	}
 
 	AnalogIn* aIn = BOARD.GetAnalogIn(argv[1]);
 	if(aIn != NULL) {
-		shell_print(shell, "%d", static_cast<int>(aIn->Read()*1000));
+		shell_print(shell, "io %s: %d.%03d", argv[1], static_cast<int>(aIn->Read()), static_cast<int>(aIn->Read()*1000)%1000);
 		return 0;
 	}
 
