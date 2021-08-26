@@ -58,7 +58,7 @@
           "ZEPHYR_TOOLCHAIN_VARIANT": "gnuarmemb"
         }
       },
-			"command": "ST-LINK_CLI.exe -c SWD SWCLK=4 SN=56FF70064971545016211087 -p ${workspaceFolder}/build_mystm32/zephyr/zephyr.hex -Rst",
+      "command": "ST-LINK_CLI.exe -c SWD SWCLK=4 SN=56FF70064971545016211087 -p ${workspaceFolder}/build_mystm32/zephyr/zephyr.hex -Rst",
       "problemMatcher": [
         "$gcc"
       ]
@@ -74,7 +74,7 @@
           "ZEPHYR_TOOLCHAIN_VARIANT": "gnuarmemb"
         }
       },
-			"command": "ST-LINK_CLI.exe -c SWD SWCLK=4 SN=49FF69064983515154320987 -p ${workspaceFolder}/build_mystm32/zephyr/zephyr.hex -Rst",
+      "command": "ST-LINK_CLI.exe -c SWD SWCLK=4 SN=49FF69064983515154320987 -p ${workspaceFolder}/build_mystm32/zephyr/zephyr.hex -Rst",
       "problemMatcher": [
         "$gcc"
       ]
@@ -125,6 +125,37 @@
       "command": "west flash -d build_myesp32 --esp-device COM7",
       "problemMatcher": [
         "$gcc"
+      ]
+    },
+    {
+      "label": "Menuconfig MySTM32",
+      "type": "shell",
+      "group": "build",
+      "options": {
+        "env": {
+          "GNUARMEMB_TOOLCHAIN_PATH": "D:/workspace/toolchain/gcc",
+          "CROSS_COMPILE": "arm-none-eabi-",
+          "ZEPHYR_TOOLCHAIN_VARIANT": "gnuarmemb"
+        }
+      },
+      "command": "west build -t guiconfig proj",
+      "problemMatcher": [
+        "$gcc"
+      ]
+    },
+    {
+      "label": "Code Tests config",
+      "type": "shell",
+      "group": "build",
+      "command": "cd ${workspaceFolder}/proj/lib/; cmake -Bbuild",
+    },
+    {
+      "label": "Code Tests run",
+      "type": "shell",
+      "group": "build",
+      "command": "cd ${workspaceFolder}/proj/lib/; cmake --build build -t lib_tests; ${workspaceFolder}/proj/lib/build/Debug/lib_tests",
+      "problemMatcher": [
+        "$msCompile"
       ]
     }
   ]
