@@ -147,13 +147,13 @@
       "label": "Code Tests config",
       "type": "shell",
       "group": "build",
-      "command": "cd ${workspaceFolder}/proj/lib/; cmake -Bbuild",
+      "command": "cmake -Bbuild_codetest ${workspaceFolder}/proj/lib",
     },
     {
       "label": "Code Tests run",
       "type": "shell",
       "group": "build",
-      "command": "cd ${workspaceFolder}/proj/lib/; cmake --build build -t lib_tests; ${workspaceFolder}/proj/lib/build/Debug/lib_tests",
+      "command": "cmake --build build_codetest -t lib_tests; ${workspaceFolder}/build_codetest/Debug/lib_tests",
       "problemMatcher": [
         "$msCompile"
       ]
