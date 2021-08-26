@@ -26,9 +26,11 @@ public:
     if(m_heating){
       if(m_temperature < 0.950F)
         m_temperature += 0.001F;
+      else m_temperature = 0.950F;
     }else{
       if(m_temperature > 0.050F)
         m_temperature -= 0.001F;
+      else m_temperature = 0.050F;
     }
   }
 };
