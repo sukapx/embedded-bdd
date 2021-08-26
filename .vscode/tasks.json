@@ -157,6 +157,13 @@
       "problemMatcher": [
         "$msCompile"
       ]
+    },
+    {
+      "label": "Run BDD PiL",
+      "type": "shell",
+      "group": "build",
+      "command": "behave --capture --capture-stderr --junit -s",
+      "problemMatcher": []
     }
   ]
 }
