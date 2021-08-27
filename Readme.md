@@ -13,7 +13,13 @@ For testing purposes 2 Testmodes are available:
 - Step by step testing by setting Signals
 - HW Mock, where the Testboard simulates the mechanics and physics continously
 
+# Component overview
+![Connections Temperature Controller](./doc/Connections_Temperature_Controller.png)
+![Connections PiL Simulator](./doc/Connections_PiL_Simulator.png)
+![Conn](./doc/Heatersystem.png)
 
+
+# Realization
 ![Photo of Control and Tesboard](./doc/wireing.jpeg)
 
 
@@ -28,6 +34,7 @@ For testing purposes 2 Testmodes are available:
 | TX2 (PB06)   | RX2       |          |
 | RX2 (PB07)   | TX2       |          |
 
+# Running it
 ![Product Name Screen Shot](./doc/hil_running.jpg)
 ![PiL Measurement plot](./doc/Processor_in_the_Loop__Run_Enabled_500-600.png)
 
@@ -68,3 +75,5 @@ BDD requirements & testing using [C# Specflow](https://gitlab.com/dominik.gausa/
 
 BDD requirements & testing using [Python Behave](
 https://gitlab.com/dominik.gausa/zephyr-os-multiboard/-/blob/master/features/PiL.feature)
+
+Codelevel Tests [using GTest Framework](https://gitlab.com/dominik.gausa/zephyr-os-multiboard/-/blob/master/proj/lib/tests/main.cpp)

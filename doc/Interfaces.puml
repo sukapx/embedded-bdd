@@ -1,0 +1,31 @@
+@startwbs Connections Temperature Controller
+<style>
+wbsDiagram {
+}
+</style>
+
+* Temperature Controller
+** GPIO
+*** Activate Heater
+*** Enable
+** AnalogIn
+*** Temperature
+** Serial
+*** ModuleCom
+@endwbs
+
+@startwbs Connections PiL Simulator
+<style>
+wbsDiagram {
+}
+</style>
+
+* PiL Simulator
+** GPIO
+*** Activate Heater
+*** Enable
+** AnalogOut
+*** Temperature
+** Serial
+*** ModuleCom
+@endwbs
