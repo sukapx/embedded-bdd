@@ -1,19 +1,42 @@
 @startuml
-	skinparam componentStyle uml2
+!theme plain
 
-	title Heatersystem
+skinparam componentStyle uml2
 
-	node "Temperature Controller" {
-    [controlloop]
-	}
+title Heatersystem
 
-  node "PiL Test" {
-    [mockloop]
-  }
+node "Temperature Controller" {
+  [controlloop]
+  [Settings]
+  [Logging]
 
-  [controlloop] -0)- [mockloop] : Heating
-  [controlloop] -(0- [mockloop] : Enable
-  [controlloop] -(0- [mockloop] : Temperature
-  [controlloop] --(0)-- [mockloop] : ModuleCom
+  [controlloop] -right(0- [Settings]
+  [Logging] -(0- [Settings]
+  [Logging] -(0- [controlloop]
+}
+
+node "PiL Test" {
+  [mockloop]
+  [IO Control]
+  [TestLogging]
+
+  [IO Control] -right0)- [mockloop]
+  [TestLogging] -(0- [mockloop]
+  [TestLogging] -right(0- [IO Control]
+}
+
+node "Test control" {
+  [Testframework]
+}
+
+[controlloop] --0)-- [mockloop] : Heating
+[controlloop] --(0-- [IO Control] : Enable
+[controlloop] -(0-- [mockloop] : Temperature
+
+[Settings] -(0)- [IO Control] : ModuleCom
+
+[Testframework] --right(0)-- [IO Control] : Testcontrol
+[Testframework] --right(0-- [Logging] : Read
+[Testframework] --right(0-- [TestLogging]
 
 @enduml

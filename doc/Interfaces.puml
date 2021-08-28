@@ -1,8 +1,5 @@
 @startwbs Connections Temperature Controller
-<style>
-wbsDiagram {
-}
-</style>
+!theme plain
 
 * Temperature Controller
 ** GPIO
@@ -15,10 +12,7 @@ wbsDiagram {
 @endwbs
 
 @startwbs Connections PiL Simulator
-<style>
-wbsDiagram {
-}
-</style>
+!theme plain
 
 * PiL Simulator
 ** GPIO
