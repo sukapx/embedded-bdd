@@ -1,25 +1,27 @@
 @startwbs Connections Temperature Controller
 !theme plain
 
-* Temperature Controller
-** GPIO
-*** Activate Heater
-*** Enable
-** AnalogIn
-*** Temperature
-** Serial
-*** ModuleCom
+*[#aeb6bf] Temperature Controller
+**[#aeb6bf] Logic
+***[#f8c471] [Out] Activate Heater
+***[#82e0aa] [In] Enable
+**[#aeb6bf] Analog
+***[#82e0aa] [In] Temperature
+**[#aeb6bf] Serial
+***[#aed6f1] ModuleCom
+***[#aed6f1] Logging
 @endwbs
 
-@startwbs Connections PiL Simulator
+@startwbs Connections PiL Testhardware
 !theme plain
 
-* PiL Simulator
-** GPIO
-*** Activate Heater
-*** Enable
-** AnalogOut
-*** Temperature
-** Serial
-*** ModuleCom
+*[#aeb6bf] PiL Testhardware
+**[#aeb6bf] Logic
+***[#82e0aa] [In] Activate Heater
+***[#f8c471] [Out] Enable
+**[#aeb6bf] Analog
+***[#f8c471] [Out] Temperature
+**[#aeb6bf] Serial
+***[#aed6f1] ModuleCom
+***[#aed6f1] Logging & Control
 @endwbs

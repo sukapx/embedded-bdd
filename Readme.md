@@ -15,7 +15,7 @@ For testing purposes 2 Testmodes are available:
 
 # Component overview
 ![Connections Temperature Controller](./doc/Connections_Temperature_Controller.png)
-![Connections PiL Simulator](./doc/Connections_PiL_Simulator.png)
+![Connections PiL Simulator](./doc/Connections_PiL_Testhardware.png)
 ![Conn](./doc/Heatersystem.png)
 
 
