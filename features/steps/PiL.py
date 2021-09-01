@@ -8,18 +8,7 @@ import json
 import matplotlib.pyplot as plt
 import numpy as np
 import csv
-
-def SafeToCSV(filename, dict):
-  try:
-    with open(filename, 'w') as csvfile:
-      csvfile.writelines("idx" + ",".join(dict.keys()))
-      for idx in len(dict[dict.keys()[0]]):
-        csvfile.write(f"{idx}");
-        for value in dict.keys():
-          csvfile.write(f",{dict[value][idx]}")
-
-  except IOError:
-    print("I/O error")
+import pandas as pd
 
 
 def PlotAndStore(filename, data):
@@ -31,7 +20,8 @@ def PlotAndStore(filename, data):
     axs[idx-1].plot(data["Itr"], item[1])
     axs[idx-1].set_title(item[0], fontsize='small', loc='left')
 
-  #SafeToCSV(f"{filename}.csv", data)
+  csv = pd.DataFrame(data)
+  csv.to_csv(f"{filename}.csv", index=False)
   plt.savefig(f"{filename}.png".replace(" ", "_"))
 
 
@@ -149,7 +139,7 @@ def step_impl(context):
     context.serialIn.join(5)
     
     trace = context.serialIn.GetTrace()
-    fname=f'{context.feature.name}__{context.scenario.name}'
+    fname=f'reports/pil/{context.feature.name}__{context.scenario.name}'
     PlotAndStore(fname, trace)
 
 
