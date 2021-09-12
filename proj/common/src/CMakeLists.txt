@@ -9,7 +9,6 @@ set(lib_sources
   ${lib_sources_h}
 )
 
-
 add_library(controllib STATIC
     ${lib_sources}
 )

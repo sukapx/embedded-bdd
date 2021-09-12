@@ -39,7 +39,7 @@ def step_impl(context, sig, value):
 @given('set_{set} is set to {value}')
 @when('set_{set} is set to {value}')
 def step_impl(context, set, value):
-  context.connector.SetSetting(set, value)
+  context.connector.SetSetting(set, int(value))
 
 
 @when('running {value}s')
@@ -48,7 +48,6 @@ def step_impl(context, value):
 
 @then('pass')
 def step_impl(context):
-  context.connector.Close()
   trace = context.connector.GetTrace()
   fname=f'reports/pil/{context.feature.name}__{context.scenario.name}'
   PlotAndStore(fname, trace)

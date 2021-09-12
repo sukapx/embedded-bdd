@@ -100,16 +100,16 @@
       ]
     },
     {
-      "label": "Code Tests config",
+      "label": "Code Tests config & build",
       "type": "shell",
       "group": "build",
-      "command": "cmake -Bbuild/codetest ${workspaceFolder}/proj/common; cmake --build build/codetest -t lib_tests",
+      "command": "cmake -Bbuild/codetest ${workspaceFolder}/proj/common; cmake --build build/codetest -t common_tests; cmake --build build/codetest -t common_shared",
     },
     {
       "label": "Code Tests run",
       "type": "shell",
       "group": "build",
-      "command": "cmake --build build/codetest -t lib_tests; ${workspaceFolder}/build/codetest/Debug/lib_tests",
+      "command": "cmake --build build/codetest -t common_tests; ${workspaceFolder}/build/codetest/Debug/common_tests",
       "problemMatcher": [
         "$msCompile"
       ]

@@ -17,18 +17,44 @@ project(proj)
 include(src/CMakeLists.txt)
 
 
-FILE(GLOB lib_tests_c tests/*.c)
-FILE(GLOB lib_tests_cpp tests/*.cpp)
-FILE(GLOB lib_tests_h tests/*.h)
-set(lib_tests
-  ${lib_tests_c}
-  ${lib_tests_cpp}
-  ${lib_tests_h}
+FILE(GLOB common_tests_c tests/*.c)
+FILE(GLOB common_tests_cpp tests/*.cpp)
+FILE(GLOB common_tests_h tests/*.h)
+set(common_tests
+  ${common_tests_c}
+  ${common_tests_cpp}
+  ${common_tests_h}
 )
 
-add_executable(lib_tests ${lib_sources} ${lib_tests})
-target_link_libraries(lib_tests gtest_main)
-target_include_directories(lib_tests PRIVATE "${CMAKE_CURRENT_LIST_DIR}/src" "${CMAKE_CURRENT_LIST_DIR}/tests")
+add_executable(common_tests ${common_tests})
+target_include_directories(common_tests PRIVATE
+    "${CMAKE_CURRENT_LIST_DIR}/tests"
+  )
+
+target_link_libraries(common_tests 
+    gtest_main
+    controllib
+  )
 
 include(GoogleTest)
-gtest_discover_tests(lib_tests)
+gtest_discover_tests(common_tests)
+
+
+
+FILE(GLOB common_shared_c sharedlib/*.c)
+FILE(GLOB common_shared_cpp sharedlib/*.cpp)
+FILE(GLOB common_shared_h sharedlib/*.h)
+set(common_shared
+  ${common_shared_c}
+  ${common_shared_cpp}
+  ${common_shared_h}
+)
+
+add_library(common_shared SHARED ${common_shared})
+target_include_directories(common_shared PRIVATE
+    "${CMAKE_CURRENT_LIST_DIR}/sharedlib"
+  )
+
+target_link_libraries(common_shared 
+    controllib
+  )
