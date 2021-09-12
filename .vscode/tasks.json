@@ -4,19 +4,7 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "Start OpenOCD",
-      "type": "shell",
-      "group": "build",
-      "command": "D:/workspace/toolchain/OpenOCD-0.8.0/bin/openocd -s D:/workspace/toolchain/OpenOCD-0.8.0/share/openocd/scripts -f board/stm32f4discovery.cfg"
-    },
-    {
-      "label": "Debugserver STM32",
-      "type": "shell",
-      "group": "build",
-      "command": "west debugserver -d build_stm32"
-    },
-    {
-      "label": "Build MySTM32",
+      "label": "Build target_app",
       "type": "shell",
       "group": "build",
       "options": {
@@ -26,13 +14,13 @@
           "ZEPHYR_TOOLCHAIN_VARIANT": "gnuarmemb"
         }
       },
-      "command": "west build -b mystm32f4 -d build_mystm32 proj",
+      "command": "west build -b mystm32f4 -d build/target_app proj/target_app",
       "problemMatcher": [
         "$gcc"
       ]
     },
     {
-      "label": "Flash MySTM32",
+      "label": "Build target_test",
       "type": "shell",
       "group": "build",
       "options": {
@@ -42,7 +30,7 @@
           "ZEPHYR_TOOLCHAIN_VARIANT": "gnuarmemb"
         }
       },
-      "command": "west flash -d build_mystm32 --openocd-search D:/workspace/toolchain/OpenOCD-0.8.0/share/openocd/scripts/",
+      "command": "west build -b mystm32f4 -d build/target_test proj/target_test",
       "problemMatcher": [
         "$gcc"
       ]
@@ -58,7 +46,7 @@
           "ZEPHYR_TOOLCHAIN_VARIANT": "gnuarmemb"
         }
       },
-      "command": "ST-LINK_CLI.exe -c SWD SWCLK=4 SN=56FF70064971545016211087 -p ${workspaceFolder}/build_mystm32/zephyr/zephyr.hex -Rst",
+      "command": "ST-LINK_CLI.exe -c SWD SWCLK=4 SN=56FF70064971545016211087 -p ${workspaceFolder}/build/target_test/zephyr/zephyr.hex -Rst",
       "problemMatcher": [
         "$gcc"
       ]
@@ -74,13 +62,13 @@
           "ZEPHYR_TOOLCHAIN_VARIANT": "gnuarmemb"
         }
       },
-      "command": "ST-LINK_CLI.exe -c SWD SWCLK=4 SN=49FF69064983515154320987 -p ${workspaceFolder}/build_mystm32/zephyr/zephyr.hex -Rst",
+      "command": "ST-LINK_CLI.exe -c SWD SWCLK=4 SN=49FF69064983515154320987 -p ${workspaceFolder}/build/target_app/zephyr/zephyr.hex -Rst",
       "problemMatcher": [
         "$gcc"
       ]
     },
     {
-      "label": "Debug MySTM32",
+      "label": "Debug target_app",
       "type": "shell",
       "group": "build",
       "options": {
@@ -90,45 +78,13 @@
           "ZEPHYR_TOOLCHAIN_VARIANT": "gnuarmemb"
         }
       },
-      "command": "west debugserver -d build_mystm32 --openocd-search D:/workspace/toolchain/OpenOCD-0.8.0/share/openocd/scripts/",
+      "command": "west debugserver -d build/target_app --openocd-search D:/workspace/toolchain/OpenOCD-0.8.0/share/openocd/scripts/",
       "problemMatcher": [
         "$gcc"
       ]
     },
     {
-      "label": "Build MyESP32",
-      "type": "shell",
-      "group": "build",
-      "options": {
-        "env": {
-          "ESPRESSIF_TOOLCHAIN_PATH": "C:/Users/gausa/.espressif/tools/xtensa-esp32-elf/esp-2020r3-8.4.0/xtensa-esp32-elf",
-          "CROSS_COMPILE": "xtensa-esp32-elf-",
-          "ZEPHYR_TOOLCHAIN_VARIANT": "espressif"
-        }
-      },
-      "command": "west build -b myesp32 -d build_myesp32 proj",
-      "problemMatcher": [
-        "$gcc"
-      ]
-    },
-    {
-      "label": "Flash MyESP32",
-      "type": "shell",
-      "group": "build",
-      "options": {
-        "env": {
-          "ESPRESSIF_TOOLCHAIN_PATH": "C:/Users/gausa/.espressif/tools/xtensa-esp32-elf/esp-2020r3-8.4.0/xtensa-esp32-elf",
-          "CROSS_COMPILE": "xtensa-esp32-elf-",
-          "ZEPHYR_TOOLCHAIN_VARIANT": "espressif"
-        }
-      },
-      "command": "west flash -d build_myesp32 --esp-device COM7",
-      "problemMatcher": [
-        "$gcc"
-      ]
-    },
-    {
-      "label": "Menuconfig MySTM32",
+      "label": "Menuconfig target_app",
       "type": "shell",
       "group": "build",
       "options": {
@@ -138,7 +94,7 @@
           "ZEPHYR_TOOLCHAIN_VARIANT": "gnuarmemb"
         }
       },
-      "command": "west build -t guiconfig proj",
+      "command": "west build -t guiconfig proj/target_app",
       "problemMatcher": [
         "$gcc"
       ]
@@ -147,22 +103,45 @@
       "label": "Code Tests config",
       "type": "shell",
       "group": "build",
-      "command": "cmake -Bbuild_codetest ${workspaceFolder}/proj/lib",
+      "command": "cmake -Bbuild/codetest ${workspaceFolder}/proj/common; cmake --build build/codetest -t lib_tests",
     },
     {
       "label": "Code Tests run",
       "type": "shell",
       "group": "build",
-      "command": "cmake --build build_codetest -t lib_tests; ${workspaceFolder}/build_codetest/Debug/lib_tests",
+      "command": "cmake --build build/codetest -t lib_tests; ${workspaceFolder}/build/codetest/Debug/lib_tests",
       "problemMatcher": [
         "$msCompile"
       ]
     },
     {
+      "label": "Run BDD SiL",
+      "type": "shell",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": false,
+        "clear": true
+      },
+      "group": "build",
+      "command": "cd proj/test_bdd; behave -D TEST_LEVEL_SIL --capture --capture-stderr --junit -s",
+      "problemMatcher": []
+    },
+    {
       "label": "Run BDD PiL",
       "type": "shell",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": false,
+        "clear": true
+      },
       "group": "build",
-      "command": "behave --capture --capture-stderr --junit -s",
+      "command": "cd proj/test_bdd; behave -D TEST_LEVEL_PIL --capture --capture-stderr --junit -s",
       "problemMatcher": []
     }
   ]

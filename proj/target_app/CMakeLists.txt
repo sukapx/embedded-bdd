@@ -1,14 +1,17 @@
 # SPDX-License-Identifier: Apache-2.0
-
 cmake_minimum_required(VERSION 3.13.1)
 
 set(BOARD_ROOT ${CMAKE_CURRENT_LIST_DIR})
-set(BOARD myesp32)
+set(BOARD mystm32)
 
-find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
+include($ENV{ZEPHYR_BASE}/cmake/app/boilerplate.cmake NO_POLICY_SCOPE)
 project(proj)
 
-include(lib/src/CMakeLists.txt)
+
+
+
+
+include(../common/src/CMakeLists.txt)
 
 FILE(GLOB app_sources_c src/*.c)
 FILE(GLOB app_sources_cpp src/*.cpp)
@@ -18,4 +21,5 @@ set(app_sources
   ${app_sources_cpp}
 )
 
-target_sources(app PRIVATE ${app_sources} ${lib_sources})
+target_sources(app PRIVATE ${app_sources})
+target_link_libraries(app PUBLIC controllib)

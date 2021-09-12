@@ -1,5 +1,22 @@
 {
   "files.associations": {
-    "kernel_offsets.h": "c"
+    "kernel_offsets.h": "c",
+    "*.inc": "cpp",
+    "map": "cpp",
+    "functional": "cpp",
+    "optional": "cpp",
+    "system_error": "cpp",
+    "xlocmon": "cpp",
+    "xtr1common": "cpp",
+    "xstring": "cpp",
+    "xlocale": "cpp",
+    "array": "cpp",
+    "initializer_list": "cpp",
+    "vector": "cpp",
+    "xtree": "cpp",
+    "xutility": "cpp",
+    "iosfwd": "cpp",
+    "algorithm": "cpp",
+    "fstream": "cpp"
   }
 }

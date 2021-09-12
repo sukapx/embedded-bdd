@@ -1,29 +1,10 @@
-from behave import *
-import threading, queue
+import re
 import serial
+import threading
 import os, sys
 import time
-import re
-import json
-import matplotlib.pyplot as plt
-import numpy as np
-import csv
-import pandas as pd
 
-
-def PlotAndStore(filename, data):
-  num_stats = len(data.items()) -1
-  fig, axs = plt.subplots(num_stats, 1, figsize=(6, 2 * num_stats), sharex=True)
-  for item, idx in zip(data.items(), range(num_stats + 1)):
-    if idx == 0:
-      continue
-    axs[idx-1].plot(data["Itr"], item[1])
-    axs[idx-1].set_title(item[0], fontsize='small', loc='left')
-
-  csv = pd.DataFrame(data)
-  csv.to_csv(f"{filename}.csv", index=False)
-  plt.savefig(f"{filename}.png".replace(" ", "_"))
-
+from steps.ConnectorBase import *
 
 
 class ConnectionThread(threading.Thread):
@@ -39,6 +20,9 @@ class ConnectionThread(threading.Thread):
     self.reg_ctrl_loop = re.compile('\[controlloop\] Itr: (\d+), Enabled: (\d+), Heating: (\d+), Temperature: ([\d\.]+)')
     self.reg_mock_loop = re.compile('\[hw_mock\] Itr: (\d+), Enabled: (\d+), Heating: (\d+), Temperature: ([\d\.]+)')
     self.config = re.compile('config\s+(\d+):\s+([\d\.]+)')
+
+  def Init(self):
+    pass
 
   def write(self, line):
     self.ser.write(f"{line}\n".encode('utf-8'))
@@ -104,42 +88,35 @@ class ConnectionThread(threading.Thread):
 
 
 
-@given('device')
-def step_impl(context):
-  context.aStopEvent = threading.Event()
-  context.serialIn = ConnectionThread(context.aStopEvent)
-  context.serialIn.start()
-  context.serialIn.write("io devicestate HW_MOCK")
-  context.serialIn.write("io config 3 1")
+class ConnectorPIL(ConnectorBase):
+  def __init__(self):
+    super().__init__()
+    print("init ConnectorPIL")
 
-@given('sig_{sig} is set to {value}')
-@when('sig_{sig} is set to {value}')
-def step_impl(context, sig, value):
-  context.serialIn.write(f"io set {sig} {value}")
+  def Init(self):
+    self.aStopEvent = threading.Event()
+    self.serialIn = ConnectionThread(self.aStopEvent)
+    self.serialIn.start()
+    self.serialIn.write("io devicestate HW_MOCK")
+    self.serialIn.write("io config 3 1")
 
-@given('set_{set} is set to {value}')
-@when('set_{set} is set to {value}')
-def step_impl(context, set, value):
-  settid = {
-    "temp_min": 1,
-    "temp_max": 2
-  }
-  assert set in settid
-  context.serialIn.write(f"io modcom 0 {settid.get(set)} {value}")
+  def SetSignal(self, signal, value):
+    self.serialIn.write(f"io set {signal} {value}")
 
+  def SetSetting(self, setting, value):
+    settid = {
+      "temp_min": 1,
+      "temp_max": 2
+    }
+    assert setting in settid
+    self.serialIn.write(f"io modcom 0 {settid.get(setting)} {value}")
 
-@when('running {value}s')
-def step_impl(context, value):
-  time.sleep(float(value))
+  def RunFor(self, seconds):
+    time.sleep(seconds)
 
-@then('pass')
-def step_impl(context):
-  if context.serialIn:
-    context.aStopEvent.set()
-    context.serialIn.join(5)
-    
-    trace = context.serialIn.GetTrace()
-    fname=f'reports/pil/{context.feature.name}__{context.scenario.name}'
-    PlotAndStore(fname, trace)
+  def GetTrace(self):
+    return self.serialIn.GetTrace()
 
-
+  def Close(self):
+    self.aStopEvent.set()
+    self.serialIn.join(5)

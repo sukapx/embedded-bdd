@@ -22,7 +22,7 @@ volatile DeviceState::State device_state = DeviceState::DEMO;
 
 
 
-#include "../lib/src/heater.h"
+#include <heater.h>
 Heater heater;
 /**
  * in0 enables heater
@@ -58,7 +58,7 @@ void controlloop(){
 	}
 }
 
-#include "../lib/src/MockHardware.h"
+#include <MockHardware.h>
 MockHardware mockHardware;
 
 void hw_mock() {
